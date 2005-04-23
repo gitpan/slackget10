@@ -1,0 +1,13 @@
+Build.PL
+Build.PL
+Changes
+MANIFEST
+META.yml # Will be created by "make dist"
+README
+lib/slackget10.pm
+lib/slackget10/Base.pm
+lib/slackget10/File.pm
+lib/slackget10/Networking.pm
+t/00-load.t
+t/pod-coverage.t
+t/pod.t
