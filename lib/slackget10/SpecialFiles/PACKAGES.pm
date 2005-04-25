@@ -1,0 +1,221 @@
+package slackget10::SpecialFiles::PACKAGES;
+
+use warnings;
+use strict;
+
+use slackget10::File;
+use slackget10::Date;
+use slackget10::Package ;
+
+=head1 NAME
+
+slackget10::SpecialFiles::PACKAGES - An interface for the special file PACKAGES.TXT
+
+=head1 VERSION
+
+Version 1.0.0
+
+=cut
+
+our $VERSION = '1.0.0';
+
+=head1 SYNOPSIS
+
+This class contain all methods for the treatment of the PACKAGES.TXT file
+
+    use slackget10::SpecialFiles::PACKAGES;
+
+    my $pack = slackget10::SpecialFiles::PACKAGES->new('PACKAGES.TXT','slackware');
+    ...
+
+=head1 WARNINGS
+
+All classes from the slackget10::SpecialFiles:: namespace need the followings methods :
+
+	- a contructor new()
+	- a method compil()
+	- a method get_result(), which one can be an alias on another method of the class.
+
+Moreover, the get_result() methode need to return a hashref. Keys of this hashref are the filenames.
+
+Classes from ths namespace represent an abstraction of the special file they can manage so informations stored in the returned hashref must have a direct link with this special file.
+
+=head1 CONSTUSTOR
+
+Take a file and an id name :
+
+	my $pack = slackget10::SpecialFiles::PACKAGES->new('PACKAGES.TXT','slackware');
+
+=cut
+
+sub new
+{
+	my ($class,$file,$root) = @_ ;
+	my $self={};
+	return undef unless(defined($file) && -e $file);
+	print "Loading $file as PACKAGES\n";
+	$self->{ROOT} = $root;
+	$self->{FILE} = new slackget10::File ($file);
+	$self->{DATA} = {};
+	$self->{METADATA} = {};
+	bless($self,$class);
+	return $self;
+}
+
+
+=head1 FUNCTIONS
+
+=head2 compile
+
+=cut
+
+sub compile {
+	my $self = shift;
+	$self->get_meta;
+	foreach (@{$self->create_entities}){
+		my $pack = new slackget10::Package (1);
+		$pack->setValue('package-source',$self->{ROOT}) if($self->{ROOT});
+		$pack->extract_informations($_);
+		print STDERR "Error: informations extraction have failed\n" if(!$pack->get_id);
+# 		print "PACKAGING of ",$pack->get_id,"\n";$pack->print_full_info;
+		$self->{DATA}->{$pack->get_id} = $pack ;
+	}
+	$self->{FILE}->Close ;
+}
+
+=head2 create_entities
+
+This method take the whole file PACKAGES.TXT and split it into entity (one package or meta informations)
+
+=cut
+
+sub create_entities {
+	my $self = shift;
+	my @entities = ();
+	my $idx = -1;
+	foreach ($self->{FILE}->Get_selection($self->{'starting-position'})){
+		if($_=~ /^PACKAGE NAME:/){
+			$idx++;
+		}
+		next if($_=~ /^\s*(#|\|-*handy-ruler)/i);
+		$entities[$idx] .= $_ ;
+	}
+	return \@entities ;
+}
+
+=head2 get_meta
+
+This method parse the 10 first lines of the PACKAGES.TXT and extract globals informations. It define the 'starting-position' object tag (this information is only for coders).
+
+	$pack->get_meta();
+
+=cut
+
+sub get_meta {
+	my $self = shift;
+	my $l = 0;
+	foreach ($self->{FILE}->Get_selection(0,15)){
+		if($_=~ /PACKAGES.TXT;  (\w+) (\w+)  (\d+) ([\d:]+) (\w+) (\d+)/){
+			$self->{METADATA}->{date} = new slackget10::Date (
+				'day-name' => $1,
+				'day-number' => $3,
+				'month' => $2,
+				'hour' => $4,
+				'year' => $6
+			);
+		}
+		elsif($_=~ /Total size of all packages \(compressed\):\s+(\d+) MB/){
+			$self->{METADATA}->{'compressed-size'} = $1;
+		}
+		elsif($_=~ /Total size of all packages \(uncompressed\):\s+(\d+) MB/){
+			$self->{METADATA}->{'uncompressed-size'} = $1;
+		}
+		elsif($_=~ /^PACKAGE NAME:/)
+		{
+			$self->{'starting-position'}=$l;
+			last;
+		}
+		$l++;
+	}
+}
+
+=head2 get_result
+
+
+=cut
+
+sub get_result {
+	my $self = shift;
+}
+
+=head2 get_package
+
+Return informations relative to a packages as a hashref.
+
+	my $hashref = $list->get_package($package_name) ;
+
+=cut
+
+sub get_package {
+	my ($self,$pack_name) = @_ ;
+	return $self->{DATA}->{$pack_name} ;
+}
+
+=head2 get_date
+
+return a slackget10::Date object, which is the date of the PACKAGES.TXT
+
+	my $date = $pack->get_date ;
+
+=cut
+
+sub get_date {
+	my $self = shift;
+	return $self->{METADATA}->{date} ;
+}
+
+
+=head2 to_XML
+
+return the package as an XML encoded string.
+
+	$xml = $package->to_XML();
+
+=cut
+
+sub to_XML
+{
+	my $self = shift;
+	my $xml = "<packages>\n";
+	foreach (keys(%{$self->{DATA}})){
+# 		print "XMLization of $_\n";
+		$xml .= $self->{DATA}->{$_}->to_XML ;
+	}
+	$xml .= "</packages>\n";
+	return $xml;
+}
+
+=head1 AUTHOR
+
+DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-slackget10-networking@rt.cpan.org>, or through the web interface at
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.
+
+=head1 ACKNOWLEDGEMENTS
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2005 DUPUIS Arnaud, All Rights Reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+1; # End of slackget10::SpecialFiles::PACKAGES

@@ -26,7 +26,7 @@ Access to hard disk are economized by taking a copy of the file in memory, so if
 	my $file = slackget10::File->new('foo.txt'); # if foo.txt exist the constructor will call the Read() method
 	$file->add("an example\n");
 	$file->Write();
-	$file->Write("bar.txt");
+	$file->Write("bar.txt"); # write foo.txt (plus the addition) into bar.txt
 	$file->Close(); # Free the memory !
 	$file->Read(); # But the slackget10::File object is not destroy and you can re-load the file content
 	$file->Read("baz.txt"); # Or changing file (the object will be update with the new file)
@@ -66,11 +66,11 @@ Take a filename as argument.
 
 Take a filename as argument, and load the file in memory.
 
-	$sg_base->Read($filename);
+	$file->Read($filename);
 
 You can call this method without passing parameters, if you have give a filename to the constructor.
 
-	$sg_base->Read();
+	$file->Read();
 
 This method doesn't return the file, you must call Get_file() to do that.
 
@@ -109,8 +109,13 @@ sub Read
 
 Take a filename to write data and raw data 
 
-	$sg_base->Write($filename,@data);
+	$file->Write($filename,@data);
 
+You also can cal this method without any parameter :
+
+	$file->Write ;
+
+In this case, the Write() method will wrote data in memory into the last opened file (with Read() or new()).
 =cut
 
 sub Write
@@ -202,7 +207,7 @@ Free the memory. This method close the current file memory image. If you don't c
 
 =cut
 
-sub Close{
+sub Close {
 	my $self = shift;
 	$self->{FILE} = [];
 }

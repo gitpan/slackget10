@@ -11,7 +11,7 @@ require slackget10::File;
 
 =head1 NAME
 
-slackget10::Base - The great new slackget10::Base!
+slackget10::Base - A module which centralize some base methods usefull to slack-get
 
 =head1 VERSION
 
@@ -23,14 +23,13 @@ our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
+This module centralize bases tasks like package directory compilation, etc. This class is mainly designed to be a wrapper so it can change a lot before the release.
 
     use slackget10::Base;
 
-    my $foo = slackget10::Base->new();
-    ...
+    my $base = slackget10::Base->new();
+    my $packagelist = $base->compil_package_directory('/var/log/packages/');
+    $packagelist = $base->load_list_from_xml_file('installed.xml');
 
 =cut
 
@@ -62,7 +61,7 @@ sub ls
 	my $dir = shift;
 	if (! opendir( DIR, $dir) )
 	{
-		print "Impossible d'ouvrir le répertoire $dir : $!.";
+		warn "unable to open $dir : $!.";
 		return undef;
 	}
 	my @files = grep !/(?:^\.$)|(?:^\.\$)|(?:^\.\.)/, readdir DIR;

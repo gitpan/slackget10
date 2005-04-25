@@ -1,0 +1,188 @@
+package slackget10::SpecialFiles::CHECKSUMS;
+
+use warnings;
+use strict;
+
+use slackget10::File;
+use slackget10::Package;
+
+=head1 NAME
+
+slackget10::SpecialFiles::CHECKSUMS - An interface for the special file CHECKSUMES.md5
+
+=head1 VERSION
+
+Version 1.0.0
+
+=cut
+
+our $VERSION = '1.0.0';
+
+=head1 SYNOPSIS
+
+This class contain all methods for the treatment of the CHECKSMUMS.md5 file
+
+    use slackget10::SpecialFiles::CHECKSUMS;
+
+    my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('CHECKSUMS.md5','slackware');
+    $spec_chk->compile();
+    my $ref = $spec_chk->get_checksums('glibc-profile-2.3.4-i486-1');
+    print "Checksum for glibc-profile-2.3.4-i486-1.tgz : $ref->{checksum}\n";
+    print "Checksum for glibc-profile-2.3.4-i486-1.tgz.asc : $ref->{'signature-checksum'}\n";
+
+=head1 WARNINGS
+
+All classes from the slackget10::SpecialFiles:: namespace need the followings methods :
+
+	- a contructor new()
+	- a method compil()
+	- a method get_result(), which one can be an alias on another method of the class.
+
+Moreover, the get_result() methode need to return a hashref. Keys of this hashref are the filenames.
+
+Classes from ths namespace represent an abstraction of the special file they can manage so informations stored in the returned hashref must have a direct link with this special file.
+
+=head1 CONSTUSTOR
+
+The constructor take two argument : the file CHECKSUMS.md5 with his all path, and an id name.
+
+	my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('/home/packages/CHECKSUMS.md5','slackware');
+
+The constructor return undef if the file does not exist.
+
+=cut
+
+sub new
+{
+	my ($class,$file,$root) = @_ ;
+	my $self={};
+	$self->{ROOT} = $root;
+	return undef unless(defined($file) && -e $file);
+	print "Loading $file as CHECKSUMS\n";
+	$self->{FILE} = new slackget10::File ($file);
+	$self->{DATA} = {};
+	bless($self,$class);
+	return $self;
+}
+
+=head1 FUNCTIONS
+
+=head2 compile
+
+This method take no arguments, and extract the list of couple (file/checksum). Those couple are store into an internal data structure.
+
+	$spec_chk->compile();
+
+=cut
+
+sub compile {
+	my $self = shift;
+	foreach ($self->{FILE}->Get_file()){
+		if($_=~/^([0-9a-f]*)\s+\.\/(.*)\/([^\/\s\n]*)\.tgz\.asc$/i){
+			next if ($2=~ /source\//);
+			unless(defined($self->{DATA}->{$3})){
+				$self->{DATA}->{$3} = new slackget10::Package ($3) ;
+				$self->{DATA}->{$3}->setValue('package-source',$self->{ROOT}) if($self->{ROOT});
+				$self->{DATA}->{$3}->setValue('package-location',$2);
+			}
+			$self->{DATA}->{$3}->setValue('signature-checksum',$1);
+		}
+		elsif($_=~/^([0-9a-f]*)\s+\.\/(.*)\/([^\/\s\n]*)\.tgz$/i){
+			next if ($2=~ /source\//);
+			unless(defined($self->{DATA}->{$3})){
+				$self->{DATA}->{$3} = new slackget10::Package ($3) ;
+				$self->{DATA}->{$3}->setValue('package-source',$self->{ROOT}) if($self->{ROOT});
+				$self->{DATA}->{$3}->setValue('package-location',$2);
+			}
+# 			$self->{DATA}->{$3}->{checksum} = $1;
+			$self->{DATA}->{$3}->setValue('checksum',$1);
+		}
+	}
+	$self->{FILE}->Close();
+}
+
+=head2 get_checksums
+
+This method return a hashref containing 2 keys : checksum and signature-checksum, wich are respectively the file checksum and the GnuPG signature (.asc) checksum.
+
+	my $ref = $spec_chk->get_checksums($package_name) ;
+
+This method return undef if $package_name doesn't exist in the data structure.
+
+=cut
+
+sub get_checksums {
+	my ($self,$package) = @_;
+	return $self->{DATA}->{$package};
+}
+
+=head2 get_package
+
+Return informations relative to a packages as a hashref.
+
+	my $hashref = $list->get_package($package_name) ;
+
+=cut
+
+sub get_package {
+	my ($self,$pack_name) = @_ ;
+	return $self->{DATA}->{$pack_name} ;
+}
+
+=head2 get_result
+
+Alias for get_checksums()
+
+=cut
+
+sub get_result {
+	my $self = shift;
+	return $self->get_checksums();
+}
+
+=head2 to_XML
+
+Translate the internale data structure into a single XML string. 
+
+WARNING: this method is for debug ONLY, YOU NEVER HAVE TO CALL IT IN NORMAL USE.
+
+=cut
+
+sub to_XML {
+	my $self = shift;
+	my $xml = "<checksums>\n";
+	foreach (keys(%{$self->{DATA}})){
+		$xml .= "\t<package id=\"$_\">\n";
+		foreach my $key (keys(%{$self->{DATA}->{$_}})) {
+			$xml .= "\t\t<$key>$self->{DATA}->{$_}->{$key}</$key>\n";
+		}
+		$xml .= "\t</package>\n";
+	}
+	$xml .= "</checksums>\n";
+	return $xml;
+}
+
+=head1 AUTHOR
+
+DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-slackget10-networking@rt.cpan.org>, or through the web interface at
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.
+
+=head1 ACKNOWLEDGEMENTS
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2005 DUPUIS Arnaud, All Rights Reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+1; # End of slackget10::SpecialFiles::CHECKSUMS

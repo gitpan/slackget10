@@ -6,8 +6,17 @@ META.yml # Will be created by "make dist"
 README
 lib/slackget10.pm
 lib/slackget10/Base.pm
+lib/slackget10/Date.pm
 lib/slackget10/File.pm
 lib/slackget10/Networking.pm
+lib/slackget10/PackageList.pm
+lib/slackget10/Package.pm
+lib/slackget10/Search.pm
+lib/slackget10/SpecialFileContainerList.pm
+lib/slackget10/SpecialFileContainer.pm
+lib/slackget10/SpecialFiles/CHECKSUMS.pm
+lib/slackget10/SpecialFiles/FILELIST.pm
+lib/slackget10/SpecialFiles/PACKAGES.pm
 t/00-load.t
 t/pod-coverage.t
 t/pod.t

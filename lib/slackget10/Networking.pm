@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-slackget10::Networking - The great new slackget10::Networking!
+slackget10::Networking - A wrapper for network operation in slack-get
 
 =head1 VERSION
 
@@ -17,9 +17,7 @@ our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
+This class is anoter wrapper for slack-get. It will encapsulate all nework operation. This class can chang a lot before the release and it may be rename in slackget10::NetworkConnection.
 
     use slackget10::Networking;
 
