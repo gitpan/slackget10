@@ -1,8 +1,8 @@
 --- #YAML:1.0
 name: slackget10
-version: 0.03
+version: 0.03b
 author:
   - DUPUIS Arnaud <a.dupuis@infinityperl.org>
-abstract: The great new slackget10!
+abstract: The main slack-get 1.0 library
 license: gpl
 generated_by: Module::Build version 0.2609, without YAML.pm

@@ -1,11 +1,13 @@
-package slackget10::Networking;
+package slackget10::ServerList;
 
 use warnings;
 use strict;
 
+require slackget10::List;
+
 =head1 NAME
 
-slackget10::Networking - A wrapper for network operation in slack-get
+slackget10::ServerList - A container of slackget10::Server object
 
 =head1 VERSION
 
@@ -14,24 +16,24 @@ Version 1.0.0
 =cut
 
 our $VERSION = '1.0.0';
+our @ISA = qw( slackget10::List );
 
 =head1 SYNOPSIS
 
-This class is anoter wrapper for slack-get. It will encapsulate all nework operation. This class can chang a lot before the release and it may be rename in slackget10::NetworkConnection.
+This class is used by slack-get to represent a server store in the servers.xml file.
 
-    use slackget10::Networking;
+    use slackget10::ServerList;
 
-    my $foo = slackget10::Networking->new();
+    my $foo = slackget10::ServerList->new();
     ...
 
 =cut
 
 sub new
 {
-	my ($class,$file) = @_ ;
-	my $self={};
+	my ($class) = @_ ;
+	my $self={list_type => 'slackget10::Server'};
 	bless($self,$class);
-	
 	return $self;
 }
 
@@ -40,21 +42,9 @@ sub new
 
 =head1 FUNCTIONS
 
-=head1 FUNCTIONS
-
-=head2 function1
+This class inheritate from slackget10::List, so have a look to this class for a complete list of methods.
 
 =cut
-
-sub function1 {
-}
-
-=head2 function2
-
-=cut
-
-sub function2 {
-}
 
 =head1 AUTHOR
 
@@ -79,4 +69,4 @@ under the same terms as Perl itself.
 
 =cut
 
-1; # End of slackget10::Networking
+1; # End of slackget10::ServerList

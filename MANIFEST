@@ -9,7 +9,15 @@ lib/slackget10.pm
 lib/slackget10/Base.pm
 lib/slackget10/Date.pm
 lib/slackget10/File.pm
-lib/slackget10/Networking.pm
+lib/slackget10/Server.pm
+lib/slackget10/Config.pm
+lib/slackget10/List.pm
+lib/slackget10/ServerList.pm
+lib/slackget10/Network.pm
+lib/slackget10/Network/Connection.pm
+lib/slackget10/Network/Daemon.pm
+lib/slackget10/Network/Connection/HTTP.pm
+lib/slackget10/Network/Connection/FTP.pm
 lib/slackget10/PackageList.pm
 lib/slackget10/Package.pm
 lib/slackget10/Search.pm

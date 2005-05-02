@@ -5,15 +5,15 @@ use strict;
 
 =head1 NAME
 
-slackget10 - The great new slackget10!
+slackget10 - The main slack-get 1.0 library
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03b
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.03b';
 
 =head1 SYNOPSIS
 
