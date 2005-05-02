@@ -27,15 +27,17 @@ This module is used to represent a package for slack-get
 
 =head1 CONSTRUCTOR
 
-The constructor take only one parameter : a package name.
+The constructor take two parameters : a package name, and an id (the namespace of the package like 'slackware' or 'linuxpackages')
 
-	my $package = new slackget10::Package ('aaa_base-10.0.0-noarch-1');
+	my $package = new slackget10::Package ('aaa_base-10.0.0-noarch-1','slackware');
 
 The constructor automatically call the fill_object_from_package_name() method.
 
 You also can pass some extra arguments like that :
 
-	my $package = new slackget10::Package ('aaa_base-10.0.0-noarch-1', SOURCE => 'slackware');
+	my $package = new slackget10::Package ('aaa_base-10.0.0-noarch-1', 'package-object-version' => '1.0.0');
+
+The constructor return undef if the id is not defined.
 
 =cut
 
@@ -62,14 +64,15 @@ Set the value of a named key to the value passed in argument.
 
 sub setValue {
 	my ($self,$key,$value) = @_ ;
+# 	print "Setting $key=$value for $self\n";
 	$self->{PACK}->{$key} = $value ;
 }
 
 =head2 merge
 
-This method merge $another_package with $package. WARNING: $another_package will be destroy in the operation (this is a collateral damage ;-), for some dark precupation of memory.
+This method merge $another_package with $package. WARNING: $another_package will be destroy in the operation (this is a collateral damage ;-), for some dark preocupation of memory.
 
-This method overwritte existing value.
+This method overwrite existing value.
 
 	$package->merge($another_package);
 
@@ -96,7 +99,7 @@ sub getValue {
 	return $self->{PACK}->{$key};
 }
 
-=head2 _setId
+=head2 _setId [PRIVATE]
 
 set the package ID (normally the package complete name, like aaa_base-10.0.0-noarch-1). In normal use you don't need to use this method
 
@@ -156,7 +159,7 @@ sub fill_object_from_package_name{
 
 =head2 extract_informations
 
-Extract informations about a package from a string.
+Extract informations about a package from a string. This string must be a line of the description of a package.
 
 	$package->extract_informations($data);
 
@@ -220,9 +223,16 @@ sub to_XML
 {
 	my $self = shift;
 	my $xml = "\t<package id=\"$self->{ROOT}\">\n";
-	foreach (keys(%{$self->{PACK}})){
-		$xml .= "\t\t<$_>$self->{PACK}->{$_}</$_>\n";
+	if($self->{PACK}->{'package-date'}){
+		$xml .= "\t\t".$self->{PACK}->{'package-date'}->to_XML();
+		$self->{TMP}->{'package-date'}=$self->{PACK}->{'package-date'};
+		delete($self->{PACK}->{'package-date'});
 	}
+	foreach (keys(%{$self->{PACK}})){
+		$xml .= "\t\t<$_>$self->{PACK}->{$_}</$_>\n" if(defined($self->{PACK}->{$_}));
+	}
+	$self->{PACK}->{'package-date'}=$self->{TMP}->{'package-date'};
+	delete($self->{TMP});
 	$xml .= "\t</package>\n";
 	return $xml;
 }
@@ -354,44 +364,46 @@ The supported tags are: package-maintener, info-destination-slackware, info-pack
 
 sub grab_info_from_description{
 	my $self = shift;
-	if($self->{PACK}->{description}=~ /this version .* was comp(iled|lied) for ([^\n]*) (.|\n)* by (.*)/i){
+	if($self->{PACK}->{description}=~ /this\s+version\s+.*\s+was\s+comp(iled|lied)\s+for\s+([^\n]*)\s+(.|\n)*\s+by\s+(.*)/i){
 		$self->setValue('info-destination-slackware',$2);
 		$self->setValue('package-maintener',$4);
 	}
-	elsif($self->{PACK}->{description}=~ /Package created by: (.*) &lt;(.*)&gt;/i){
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:\s+(.*)\s+&lt;(.*)&gt;/i){
 		$self->setValue('info-packager-mail',$2);
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Package created by (.*) \[(.*)\]/i){
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by\s+(.*)\s+\[(.*)\]/i){
 		$self->setValue('info-homepage',$2);
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Package created .*by (.*) \((.*)\)/i){
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+.*by\s+(.*)\s+\((.*)\)/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Package Maintainer: (.*) \((.*)\)/i){
+	elsif($self->{PACK}->{description}=~ /Package\s+Maintainer:\s+(.*)\s+\((.*)\)/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Packaged by (.*) &lt;(.*)&gt;/i){
+	elsif($self->{PACK}->{description}=~ /Packaged\s+by\s+(.*)\s+&lt;(.*)&gt;/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Packaged by:? (.*)( (by|for|to|on))?/i){
+	elsif($self->{PACK}->{description}=~ /Packaged\s+by:?\s+(.*)(\s+(by|for|to|on))?/i){
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Package created by:? (.*)/i){
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:?\s+(.*)/i){
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Packager: (.*) &lt;(.*)&gt;/i){
+	elsif($self->{PACK}->{description}=~ /Packager:\s+(.*)\s+&lt;(.*)&gt;/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Packager: (.*)/i){
+	elsif($self->{PACK}->{description}=~ /Packager:\s+(.*)/i){
 		$self->setValue('package-maintener',$1);
 	}
-	
+	elsif($self->{PACK}->{description}=~ /Packager\s+(.*)/i){
+		$self->setValue('package-maintener',$1);
+	}
 	if($self->{PACK}->{description}=~ /Homepage: (.*)/i){
 		$self->setValue('info-homepage',$1);
 	}

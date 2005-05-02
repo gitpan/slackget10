@@ -60,7 +60,6 @@ sub new
 	$self->{DATA}->{FILELIST} = slackget10::SpecialFiles::FILELIST->new($args{FILELIST},$root) or return undef;
 	$self->{DATA}->{PACKAGES} = slackget10::SpecialFiles::PACKAGES->new($args{PACKAGES},$root) or return undef;
 	$self->{DATA}->{CHECKSUMS} = slackget10::SpecialFiles::CHECKSUMS->new($args{CHECKSUMS},$root) or return undef;
-	$self->{DATA}->{PACKAGELIST} = slackget10::PackageList->new('no-root-tag' => 1) or return undef;
 	bless($self);#,$class
 	return $self;
 }
@@ -79,7 +78,7 @@ sub compile {
 	my $self = shift;
 	printf("compiling FILELIST...");
 	$|++;
-	$self->{DATA}->{FILELIST}->compile ; 
+	$self->{DATA}->{FILELIST}->compile ;
 	print "ok\n";
 	printf("compiling PACKAGES...");
 	$|++;
@@ -91,18 +90,42 @@ sub compile {
 	print "ok\n";
 	printf("merging data...");
 	$|++;
+	$self->{DATA}->{PACKAGELIST} = undef;
+	my $packagelist = slackget10::PackageList->new('no-root-tag' => 1) or return undef;
 	my $r_list = $self->{DATA}->{FILELIST}->get_file_list ;
 	foreach my $pkg_name (keys(%{$r_list})){
 # 		print "[DEBUG] Getting info on $pkg_name\n";
 		my $r_pack = $self->{DATA}->{PACKAGES}->get_package($pkg_name);
 		my $r_chk = $self->{DATA}->{CHECKSUMS}->get_package($pkg_name);
+		my $r_list = $self->{DATA}->{FILELIST}->get_package($pkg_name);
 		my $pack = new slackget10::Package ($pkg_name);
 		$pack->merge($r_pack);
 		$pack->merge($r_chk);
-		$self->{DATA}->{PACKAGELIST}->add($pack);
+		$pack->merge($r_list);
+		$packagelist->add($pack);
 # 		$pack->print_restricted_info ;
 	}
+	$self->{DATA}->{PACKAGELIST} = $packagelist ;
+	## WARNING: DEBUG ONLY
+# 	use slackget10::File;
+# 	
+# 	my $file = new slackget10::File ();
+# 	$file->Write("debug/specialfilecontainer_$self->{ROOT}.xml",$self->to_XML) ;
+# 	$file->Close;
 	print "ok\n";
+}
+
+=head2 id
+
+Return the id of the SpecialFileContainer object (like: 'slackware', 'linuxpackages', etc.)
+
+	my $id = $container->id ;
+
+=cut
+
+sub id {
+	my $self = shift;
+	return $self->{ROOT} ;
 }
 
 =head2 to_XML
@@ -116,6 +139,7 @@ return a string XML encoded which represent the compilation of PACKAGES, FILELIS
 sub to_XML {
 	my $self = shift;
 	my $xml = "  <$self->{ROOT}>\n";
+# 	print "\t[$self] XMLization of the $self->{DATA}->{PACKAGELIST} packagelist\n";
 	$xml .= $self->{DATA}->{PACKAGELIST}->to_XML ;
 	$xml .= "  </$self->{ROOT}>\n";
 	return $xml;

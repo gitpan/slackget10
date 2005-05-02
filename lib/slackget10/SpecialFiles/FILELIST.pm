@@ -45,9 +45,9 @@ Classes from ths namespace represent an abstraction of the special file they can
 
 =head1 CONSTUSTOR
 
-The constructor take only one argument : the file FILELIST.TXT with his all path.
+Take a file, a slackget10::Config object and an id name :
 
-	my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('/home/packages/FILELIST.TXT');
+	my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('/home/packages/FILELIST.TXT',$config,'slackware');
 
 The constructor return undef if the file does not exist.
 
@@ -55,7 +55,8 @@ The constructor return undef if the file does not exist.
 
 sub new
 {
-	my ($class,$file,$root) = @_ ;
+	my ($class,$file,$config,$root) = @_ ;
+	return undef if(!defined($config) && $config ne 'slackget10::Config') ;
 	my $self={};
 	$self->{ROOT} = $root;
 	return undef unless(defined($file) && -e $file);
@@ -91,30 +92,36 @@ sub compile {
 	}
 	foreach ($self->{FILE}->Get_file()){
 		next if($_=~ /\.asc$/);
-		if($_=~/(\d+)-(\d+)-(\d+)\s+(\d+):(\d+)\s+\.\/(.*)\/([^\/\s\n]*)\.tgz$/i){
-			next if ($6=~ /source\//);
-			$self->{DATA}->{$7} = new slackget10::Package ($7);
-			$self->{DATA}->{$7}->setValue('package-source',$self->{ROOT}) if($self->{ROOT});
-			$self->{DATA}->{$7}->setValue('package-path',$6);
-# 			$self->{DATA}->{$7}->{'package-path'} = $6;
-			$self->{DATA}->{$7}->setValue('package-date',new slackget10::Date (
-				'year' => $1,
-				'month-number' => $2,
-				'day-number' => $3,
-				'hour' => "$4:$5:00"
+		
+		if(my @m=$_=~/^([^\s]+)\s+(\d+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)-(\d+)-(\d+)\s+(\d+):(\d+)\s+\.\/(.*)\/(.*)\.tgz\s*\n*$/gi){#(\d+)-(\d+)-(\d+)\s+(\d+):(\d+)\s+\.\/(.*)\/([^\/\s\n]*)\.tgz
+			#        1          2       3       4       5       6     7      8      9     10         11    12
+			$m[10].='/'; # a fuckng bad hack :(
+			next if ($m[10]=~ /(source|src)\//);
+# 			print "matching $m[11] : \n\t",join ' ; ',@m,"\n\n";
+			$self->{DATA}->{$m[11]} = new slackget10::Package ($m[11]);
+			$self->{DATA}->{$m[11]}->setValue('package-source',$self->{ROOT}) if($self->{ROOT});
+			$self->{DATA}->{$m[11]}->setValue('package-location',$m[10]);
+			$self->{DATA}->{$m[11]}->setValue('compressed-size',int($m[4]/1024));
+			$self->{DATA}->{$m[11]}->setValue('package-date',new slackget10::Date (
+				'year' => $m[5],
+				'month-number' => $m[6],
+				'day-number' => $m[7],
+				'hour' => $m[8].':'.$m[9].':00'
 			));
-# 			$self->{DATA}->{$7}->{'package-date'} = new slackget10::Date (
-# 				'year' => $1,
-# 				'month-number' => $2,
-# 				'day-number' => $3,
-# 				'hour' => "$4:$5:00"
-# 			);
+# 			$self->{FILE}->Write("packages/$m[11]_$self->{ROOT}.xml",$self->{DATA}->{$m[11]}->to_XML);
+# 			print "\nPAUSE\n";<STDIN>;
 		}
-		elsif($_=~/(.*)\.tgz$/i){
-			print "Skipping $1 even if it's a .tgz\n";
+		elsif($_=~/\.tgz/i){
+			warn "Skipping $1 even if it's a .tgz\n";
 		}
 	}
 	$self->{FILE}->Close();
+	
+	# DEBUG ONLY
+# 	unlink("filelist_$self->{ROOT}.xml") if(-e "filelist_$self->{ROOT}.xml");
+# 	print "saving filelist_$self->{ROOT}.xml\n";
+# 	$self->{FILE}->Write("debug/filelist_$self->{ROOT}.xml",$self->to_XML);
+# 	$self->{FILE}->Close();
 }
 
 =head2 get_file_list
@@ -122,12 +129,10 @@ sub compile {
 Return a hashref build on this model 
 
 	$ref = {
-		filename => package-namespace
+		filename => slackget10::Package
 	}
 
-Where filename is a full name, and package-namespace is one of the : slackware, extra, pasture
-
-	my $ref = $list->get_file_list() ;
+	my $ref = $list->get_file_list ;
 
 =cut
 
@@ -187,13 +192,7 @@ sub to_XML {
 	my $self = shift;
 	my $xml = "<filelist>\n";
 	foreach (keys(%{$self->{DATA}})){
-		$xml .= "\t<package id=\"$_\">\n";
-		$xml .= "\t\t<package-path>$self->{DATA}->{$_}->{'package-path'}</package-path>\n" if($self->{DATA}->{$_}->{'package-path'});
-		$xml.= "\t\t".$self->{DATA}->{$_}->{'package-date'}->to_XML ;
-# 		foreach my $key (keys(%{$self->{DATA}->{$_}})) {
-# 			$xml .= "\t\t<$key>$self->{DATA}->{$_}->{$key}</$key>\n";
-# 		}
-		$xml .= "\t</package>\n";
+		$xml .= $self->{DATA}->{$_}->to_XML ;
 	}
 	$xml .= "</filelist>\n";
 	return $xml;

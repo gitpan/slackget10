@@ -2,4 +2,23 @@ Revision history for slackget10
 
 0.01    Date/time
         First version, released on an unsuspecting world.
+	
+0.02	Many updates and addings
+
+0.03	The followings classes are now in there neare final form :
+	- slackget10::Package
+	- slackget10::PackageList
+	- slackget10::SpecialFiles::PACKAGES
+	- slackget10::SpecialFiles::CHECKSUMS
+	- slackget10::SpecialFiles::FILELIST
+	- slackget10::SpecialFileContainer
+	- slackget10::SpecialFileContainerList
+	
+	The slackget10::Base have well advance, and a new namespace have been added : slackget10::Network::* which will manage all network connections. Classes from this namespace will be has simple has the other to use (I hope...)
+	New classesare (I can ommit somes..) :
+	- All slackget10::Network::* classes
+	- slackget10::List
+	- slackget10::Server
+	- slackget10::ServerList
+	- slackget10::Config (I think it's a new one but I'm not sure :))
 

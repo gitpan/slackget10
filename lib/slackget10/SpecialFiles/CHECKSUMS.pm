@@ -44,9 +44,9 @@ Classes from ths namespace represent an abstraction of the special file they can
 
 =head1 CONSTUSTOR
 
-The constructor take two argument : the file CHECKSUMS.md5 with his all path, and an id name.
+The constructor take three argument : the file CHECKSUMS.md5 with his all path, a slackget10::Config object and an id name.
 
-	my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('/home/packages/CHECKSUMS.md5','slackware');
+	my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('/home/packages/CHECKSUMS.md5',$config,'slackware');
 
 The constructor return undef if the file does not exist.
 
@@ -54,7 +54,8 @@ The constructor return undef if the file does not exist.
 
 sub new
 {
-	my ($class,$file,$root) = @_ ;
+	my ($class,$file,$config,$root) = @_ ;
+	return undef if(!defined($config) && $config ne 'slackget10::Config') ;
 	my $self={};
 	$self->{ROOT} = $root;
 	return undef unless(defined($file) && -e $file);
@@ -99,11 +100,14 @@ sub compile {
 		}
 	}
 	$self->{FILE}->Close();
+	### DEBUG ONLY
+# 	$self->{FILE}->Write("debug/checksums_$self->{ROOT}.xml",$self->to_XML);
+# 	$self->{FILE}->Close ;
 }
 
 =head2 get_checksums
 
-This method return a hashref containing 2 keys : checksum and signature-checksum, wich are respectively the file checksum and the GnuPG signature (.asc) checksum.
+This method return a slackget10::Package object containing 2 keys : checksum and signature-checksum, wich are respectively the file checksum and the GnuPG signature (.asc) checksum. The object can contain more inforations (like the package-source and package-location). This method is the same that get_package().
 
 	my $ref = $spec_chk->get_checksums($package_name) ;
 
@@ -118,9 +122,9 @@ sub get_checksums {
 
 =head2 get_package
 
-Return informations relative to a packages as a hashref.
+Return informations relative to a packages as a slackget10::Package object.
 
-	my $hashref = $list->get_package($package_name) ;
+	my $package_object = $spec_chk->get_package($package_name) ;
 
 =cut
 
@@ -152,11 +156,7 @@ sub to_XML {
 	my $self = shift;
 	my $xml = "<checksums>\n";
 	foreach (keys(%{$self->{DATA}})){
-		$xml .= "\t<package id=\"$_\">\n";
-		foreach my $key (keys(%{$self->{DATA}->{$_}})) {
-			$xml .= "\t\t<$key>$self->{DATA}->{$_}->{$key}</$key>\n";
-		}
-		$xml .= "\t</package>\n";
+		$xml.=$self->{DATA}->{$_}->to_XML
 	}
 	$xml .= "</checksums>\n";
 	return $xml;

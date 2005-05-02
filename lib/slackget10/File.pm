@@ -13,7 +13,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 
@@ -37,9 +37,12 @@ The main advantage of this module is that you don't work directly on the file bu
 
 sub new
 {
-	my ($class,$file) = @_ ;
-	my $self={};
+	my ($class,$file,%args) = @_ ;
+	my $self={%args};
+# 	print "\nActual file-encoding: $self->{'file-encoding'}\nargs : $args{'file-encoding'}\nFile: $file\n";<STDIN>;
 	bless($self,$class);
+	$self->{'file-encoding'} = 'utf-8' unless(defined($self->{'file-encoding'}));
+# 	print "using $self->{'file-encoding'} as file-encoding\n";<STDIN>;
 	$self->{FILENAME} = $file;
 	if(defined($file) && -e $file){
 		$self->Read();
@@ -59,6 +62,10 @@ Take a filename as argument.
 	$file->add("an example\n");
 	$file->Write();
 	$file->Write("bar.txt");
+
+Additionnaly you can pass an file encoding (default is utf8). For example as a European I prefer that files are stored and compile in the iso-8859-1 charset so I use the following :
+
+	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1');
 
 =head1 FUNCTIONS
 
@@ -94,7 +101,7 @@ sub Read
         }
         my $tmp;
         my @file;
-        open (F2,"<$file");
+        open (F2,"<:encoding($self->{'file-encoding'})",$file);
         while (defined($tmp=<F2>))
         {
                 push @file,$tmp;
@@ -116,6 +123,8 @@ You also can cal this method without any parameter :
 	$file->Write ;
 
 In this case, the Write() method will wrote data in memory into the last opened file (with Read() or new()).
+
+The default encoding of this method is utf-8, pass an extra arument : file-encoding to the constructor to change that.
 =cut
 
 sub Write
@@ -123,7 +132,9 @@ sub Write
         my ($self,$name,@data)=@_;
 	$name=$self->{FILENAME} unless($name);
 	@data = @{$self->{FILE}} unless(@data);
-        if(open (FILE, ">$name"))
+#         if(open (FILE, ">$name"))
+# 	print "using $self->{'file-encoding'} as file-encoding for writing\n";
+	if(open (FILE, ">:encoding($self->{'file-encoding'})",$name))
         {
                 foreach (@data)
                 {

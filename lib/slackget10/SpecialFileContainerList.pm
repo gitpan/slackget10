@@ -3,11 +3,9 @@ package slackget10::SpecialFileContainerList;
 use warnings;
 use strict;
 
-require slackget10::Package;
-
 =head1 NAME
 
-slackget10::SpecialFileContainerList - This class is a container of slackget10::Package object
+slackget10::SpecialFileContainerList - This class is a container of slackget10::SpecialFileContainer object
 
 =head1 VERSION
 
@@ -50,7 +48,7 @@ sub new
 
 =head2 add
 
-Add the package passed in argument to the list. The argument must be a slackget10::Package object
+Add the package passed in argument to the list. The argument must be a slackget10::SpecialFileContainer object
 
 	$containerlist->add($package);
 
@@ -60,13 +58,14 @@ sub add {
 	my ($self,$container) = @_ ;
 	
 	return undef if(ref($container) ne 'slackget10::SpecialFileContainer');
+# 	print "adding $container to the $self->{LIST} list of $self object\n";
 	push @{$self->{LIST}}, $container;
 	return 1;
 }
 
 =head2 get
 
-return the $index slackget10::Package object in the list
+return the $index slackget10::SpecialFileContainer object in the list
 
 	$containerlist->get($index);
 
@@ -116,6 +115,7 @@ sub to_XML
 	my $self = shift;
 	my $xml = "<slack-get>\n";
 	foreach (@{$self->{LIST}}){
+# 		print "[$self] XMLization of $_\n";
 		$xml .= $_->to_XML();
 	}
 	$xml .= "</slack-get>\n";
@@ -141,7 +141,7 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-PackageList@rt.cpan.org>, or through the web interface at
+C<bug-slackget10-SpecialFileContainerList@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.

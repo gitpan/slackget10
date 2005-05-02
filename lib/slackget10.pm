@@ -13,7 +13,7 @@ Version 0.02
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -21,30 +21,33 @@ slack-get (http://slackget.infinityperl.org) is an apt-get like tool for Slackwa
 
 The name slackget10 means slack-get 1.0 because this module is complely new and is for the 1.0 release. It is entierely object oriented, and require some other modules (like XML::Simple, Net::Ftp and LWP::Simple).
 
-This module is still pre-in alpha development phase and I release it on CPAN only for coder which want to see the new archtecture. For more informations, have a look on subclasses.
+This module is still pre-in alpha development phase and I release it on CPAN only for coder which want to see the new architecture. For more informations, have a look on subclasses.
+
+This release is mainly concentrate on the reinforcement of existing functionnalities (you can now found the /var/log/packages/ directory "compiler" at the root of this package), and adding the network support.
+The development is now concentrate on the libraries needed by slackgetd.
 
     use slackget10;
 
     my $foo = slackget10->new();
     ...
 
-=head1 CONSTRUCTOR
-
-=head1 FUNCTIONS
-
-=head2 function1
-
-=cut
-
-sub function1 {
-}
-
-=head2 function2
-
-=cut
-
-sub function2 {
-}
+# =head1 CONSTRUCTOR
+# 
+# =head1 FUNCTIONS
+# 
+# =head2 function1
+# 
+# =cut
+# 
+# sub function1 {
+# }
+# 
+# =head2 function2
+# 
+# =cut
+# 
+# sub function2 {
+# }
 
 =head1 AUTHOR
 

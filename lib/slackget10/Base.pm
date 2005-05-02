@@ -35,16 +35,9 @@ This module centralize bases tasks like package directory compilation, etc. This
 
 sub new
 {
-	my ($class,$arg) = @_ ;
-	my $self;
-	if($arg)
-	{
-		$self = $arg ;
-	}
-	else
-	{
-		$self = {};
-	}
+	my ($class,$config) = @_ ;
+	return undef if(!defined($config) && $config ne 'slackget10::Config') ;
+	my $self = {CONF => $config};
 	bless($self,$class);
 	return $self;
 }
@@ -115,7 +108,7 @@ sub compil_packages_directory
 	my $packagelist = new slackget10::PackageList ;
 	foreach (@files)
 	{
-		my $sg_file = new slackget10::File ($_) ;
+		my $sg_file = new slackget10::File ($_,'file-encoding' => $self->{CONF}->{common}->{'file-encoding'}) ;
 		die $! unless $sg_file;
 		my @file = $sg_file->Get_file();
 		$_ =~ /^.*\/([^\/]*)$/;
@@ -180,11 +173,11 @@ sub compil_packages_directory
 }
 
 
-=head2 load_list_from_xml_file
+=head2 load_installed_list_from_xml_file
 
-Load the data for filling the list from an XML file. Return a slackget10::PackageList
+Load the data for filling the list from an XML file. Return a slackget10::PackageList. This method is design for reading a installed.xml file.
 
-	$packagelist = $base->load_list_from_xml_file('installed.xml');
+	$packagelist = $base->load_installed_list_from_xml_file('installed.xml');
 
 =cut
 
@@ -201,6 +194,53 @@ sub load_installed_list_from_xml_file {
 	}
 	return $package_list;
 }
+
+
+=head2 load_packages_list_from_xml_file
+
+Load the data for filling the list from an XML file. Return a hashref built on this model :
+
+	my $hashref = {
+		'key' => slackget10::PackageList,
+		...
+	};
+
+Ex:
+
+	my $hashref = {
+		'slackware' => blessed(slackget10::PackageList),
+		'slacky' => blessed(slackget10::PackageList),
+		'audioslack' => blessed(slackget10::PackageList),
+		'linuxpackages' => blessed(slackget10::PackageList),
+	};
+
+This method is design for reading a packages.xml file.
+
+	$hashref = $base->load_packages_list_from_xml_file('packages.xml');
+
+=cut
+
+sub load_packages_list_from_xml_file {
+	my ($self,$file) = @_;
+	my $ref = {};
+	
+	my $xml_in = XML::Simple::XMLin($file,KeyAttr => {'package' => 'id'});
+	foreach my $group (keys(%{$xml_in})){
+		my $package_list = new slackget10::PackageList ;
+		foreach my $pack_name (keys(%{$xml_in->{$group}->{'package'}})){
+			#TODO: finir
+			my $package = new slackget10::Package ($pack_name);
+			foreach my $key (keys(%{$xml_in->{$group}->{'package'}->{$pack_name}})){
+				$package->setValue($key,$xml_in->{$group}->{'package'}->{$pack_name}->{$key}) ;
+			}
+			$package_list->add($package);
+		}
+		$ref->{$group} = $package_list;
+	}
+	return $ref;
+}
+
+
 
 =head2 set_include_file_list
 

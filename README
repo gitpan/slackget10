@@ -1,15 +1,8 @@
 slackget10
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
-
-A README file is required for CPAN modules since CPAN extracts the README
-file from a module distribution so that people browsing the archive
-can use it get an idea of the modules uses. It is usually a good idea
-to provide version information here so that people can decide whether
-fixes for the module are worth downloading.
+The slackget10 module is the core library of the release 1.0 of slack-get (http://slackget.infinityperl.org).
+This library is still in development and all version 0.0* are CVS snapshots ! And this is highly possible that they didn't works at all !!!
+For exemple the 0.02 version was bugged.
 
 INSTALLATION
 
@@ -31,9 +24,9 @@ Alternatively, to install with Module::Build, you can use the following commands
 
 COPYRIGHT AND LICENCE
 
-Put the correct copyright and licence information here.
-
-Copyright (C) 2005 DUPUIS Arnaud
+Copyright (C) 2005 DUPUIS Arnaud [ Infinity Perl ]
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+it under the terms of the GNU/GPL licence.
+
+You can found the GNU/GPL at http://www.gnu.org/licenses/gpl.html

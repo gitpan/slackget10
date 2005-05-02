@@ -115,7 +115,8 @@ return an XML encoded string.
 sub to_XML
 {
 	my $self = shift;
-	my $xml = "<packagelist>\n" unless($self->{'no-root-tag'});
+	my $xml = '';
+	$xml .= "<packagelist>\n" unless($self->{'no-root-tag'});
 	foreach (@{$self->{LIST}}){
 		$xml .= $_->to_XML();
 	}

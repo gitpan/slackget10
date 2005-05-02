@@ -42,15 +42,16 @@ Classes from ths namespace represent an abstraction of the special file they can
 
 =head1 CONSTUSTOR
 
-Take a file and an id name :
+Take a file, a slackget10::Config object and an id name :
 
-	my $pack = slackget10::SpecialFiles::PACKAGES->new('PACKAGES.TXT','slackware');
+	my $pack = slackget10::SpecialFiles::PACKAGES->new('PACKAGES.TXT',$config,'slackware');
 
 =cut
 
 sub new
 {
-	my ($class,$file,$root) = @_ ;
+	my ($class,$file,$config,$root) = @_ ;
+	return undef if(!defined($config) && $config ne 'slackget10::Config') ;
 	my $self={};
 	return undef unless(defined($file) && -e $file);
 	print "Loading $file as PACKAGES\n";
@@ -81,6 +82,9 @@ sub compile {
 		$self->{DATA}->{$pack->get_id} = $pack ;
 	}
 	$self->{FILE}->Close ;
+	### DEBUG ONLY
+# 	$self->{FILE}->Write("debug/packages_$self->{ROOT}.xml",$self->to_XML);
+# 	$self->{FILE}->Close ;
 }
 
 =head2 create_entities

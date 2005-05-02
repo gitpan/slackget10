@@ -4,6 +4,7 @@ Changes
 MANIFEST
 META.yml # Will be created by "make dist"
 README
+packdir2xml
 lib/slackget10.pm
 lib/slackget10/Base.pm
 lib/slackget10/Date.pm
