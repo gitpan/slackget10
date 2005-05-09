@@ -8,7 +8,7 @@ use slackget10::Package;
 
 =head1 NAME
 
-slackget10::SpecialFiles::CHECKSUMS - An interface for the special file CHECKSUMES.md5
+slackget10::SpecialFiles::CHECKSUMS - An interface for the special file CHECKSUMS.md5
 
 =head1 VERSION
 

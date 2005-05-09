@@ -41,8 +41,235 @@ sub new
 	my ($class,$file) = @_ ;
 	return undef unless(-e $file && -r $file);
 	my $self= XMLin($file) or return undef;
+	return undef unless(defined($self->{common}));
 	bless($self,$class);
 	return $self;
+}
+
+=head2 check_config
+
+Check for some fatal omission or error in the configuration file. Return the number of fatal errors found. Print message on the standard error output.
+
+	my $error_count = $config->check_config ;
+
+=cut
+
+sub check_config
+{
+	my $self = shift;
+	my $fatal = 0;
+	print STDERR  "===> Checking for fatal error in the configuration file <===\n";
+	print STDERR  "checking for options '<common>'...";
+	if(exists($self->{'common'}) && defined($self->{'common'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<update-directory>'...";
+	if(exists($self->{'common'}->{'update-directory'}) && defined($self->{'common'}->{'update-directory'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+	}
+	print STDERR  "\tchecking for options '<server-list-file>'...";
+	if(exists($self->{'common'}->{'server-list-file'}) && defined($self->{'common'}->{'server-list-file'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<packages-history-dir>'...";
+	if(exists($self->{'common'}->{'packages-history-dir'}) && defined($self->{'common'}->{'packages-history-dir'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<conf-version>'...";
+	if(exists($self->{'common'}->{'conf-version'}) && defined($self->{'common'}->{'conf-version'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	
+	print STDERR  "checking for options '<daemon>'...";
+	if(exists($self->{'daemon'}) && defined($self->{'daemon'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<pid-file>'...";
+	if(exists($self->{'daemon'}->{'pid-file'}) && defined($self->{'daemon'}->{'pid-file'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<installed-packages-list>'...";
+	if(exists($self->{'daemon'}->{'installed-packages-list'}) && defined($self->{'daemon'}->{'installed-packages-list'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\t\tchecking for options '<build-on-update>'...";
+	if(exists($self->{'daemon'}->{'installed-packages-list'}->{'build-on-update'}) && defined($self->{'daemon'}->{'installed-packages-list'}->{'build-on-update'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\t\tchecking for options '<build-each>'...";
+	if(exists($self->{'daemon'}->{'installed-packages-list'}->{'build-each'}) && defined($self->{'daemon'}->{'installed-packages-list'}->{'build-each'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<update-list>'...";
+	if(exists($self->{'daemon'}->{'update-list'}) && defined($self->{'daemon'}->{'update-list'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\t\tchecking for options '<build-on-start>'...";
+	if(exists($self->{'daemon'}->{'update-list'}->{'build-on-start'}) && defined($self->{'daemon'}->{'update-list'}->{'build-on-start'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\t\tchecking for options '<build-each>'...";
+	if(exists($self->{'daemon'}->{'update-list'}->{'build-each'}) && defined($self->{'daemon'}->{'update-list'}->{'build-each'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<mode>'...";
+	if(exists($self->{'daemon'}->{'mode'}) && defined($self->{'daemon'}->{'mode'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<listenning-port>'...";
+	if(exists($self->{'daemon'}->{'listenning-port'}) && defined($self->{'daemon'}->{'listenning-port'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\tchecking for options '<listenning-adress>'...";
+	if(exists($self->{'daemon'}->{'listenning-adress'}) && defined($self->{'daemon'}->{'listenning-adress'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	
+# 	print STDERR  "checking for options ''...";
+# 	if(exists($self->{''}) && defined($self->{''}))
+# 	{
+# 		print STDERR  "ok\n";
+# 	}
+# 	else
+# 	{
+# 		print STDERR  "no\n";
+# 		$fatal++;
+# 	}
+# 	print STDERR  "checking for options ''...";
+# 	if(exists($self->{''}) && defined($self->{''}))
+# 	{
+# 		print STDERR  "ok\n";
+# 	}
+# 	else
+# 	{
+# 		print STDERR  "no\n";
+# 		$fatal++;
+# 	}
+# 	print STDERR  "\tchecking for options '<>'...";
+# 	if(exists($self->{'common'}->{''}) && defined($self->{'common'}->{''}))
+# 	{
+# 		print STDERR  "ok\n";
+# 	}
+# 	else
+# 	{
+# 		print STDERR  "no\n";
+# 		$fatal++;
+# 	}
+# 	print STDERR  "\tchecking for options '<>'...";
+# 	if(exists($self->{'common'}->{''}) && defined($self->{'common'}->{''}))
+# 	{
+# 		print STDERR  "ok\n";
+# 	}
+# 	else
+# 	{
+# 		print STDERR  "no\n";
+# 		$fatal++;
+# 	}
+	
+	if($fatal)
+	{
+		print STDERR  "\n\nSTATUS : the configuration file have $fatal fatal problems\n";
+	}
+	else
+	{
+		print STDERR  "\n\nSTATUS : the configuration file seems to be good\n";
+	}
+	return $fatal;
 }
 
 =head1 AUTHOR

@@ -31,8 +31,12 @@ This class is used by slack-get to represent a server store in the servers.xml f
 
 sub new
 {
-	my ($class) = @_ ;
-	my $self={list_type => 'slackget10::Server'};
+	my ($class,%args) = @_ ;
+	my $self={list_type => 'slackget10::Server','root-tag' => 'server-list'};
+	foreach (keys(%args))
+	{
+		$self->{$_} = $args{$_};
+	}
 	bless($self,$class);
 	return $self;
 }

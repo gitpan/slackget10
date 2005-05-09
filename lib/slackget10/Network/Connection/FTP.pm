@@ -6,6 +6,7 @@ use strict;
 require slackget10::Network::Connection ;
 use Time::HiRes ;
 require Net::FTP ;
+require slackget10::File ;
 
 =head1 NAME
 
@@ -40,8 +41,10 @@ sub new
 {
 	my ($class,$url,$config) = @_ ;
 	my $self = {};
-	return undef if(!defined($config) && ref($config) ne 'HASH');
+# 	return undef if(!defined($config) && ref($config) ne 'slackget10::Config');
+# 	$self->{config} = $config ;
 	return undef unless (is_url($self,$url));
+	$self->{DATA}->{conn} = new Net::FTP ($url);
 	bless($self,$class);
 	$self->parse_url($url) ;
 	return $self;
@@ -54,25 +57,176 @@ sub new
 
 =head2 test_server
 
-This method test the rapidity of the mirror, by timing a head request on the FILELIST.TXT file.
+This method test the rapidity of the mirror, by making a new connection to the server and logging in. Be aware of the fact that after testing the connection you will have a new connection (if you were previously connected the previous connection is closed).
 
-	my $time = $self->test_server() ;
+	my $time = $connection->test_server() ;
 
 =cut
 
 sub test_server {
 	my $self = shift ;
-	print "Testing a FTP server\n";
-	my $orig_time = Time::HiRes::time();
-	#my $head = head($self->{}) or return undef;
+# 	print "[debug http] protocol : $self->{DATA}->{protocol}\n";
+# 	print "[debug http] host : $self->{DATA}->{host}\n";
+	if(defined($self->{DATA}->{conn}))
+	{
+		$self->{DATA}->{conn}->close ;
+		$self->{DATA}->{conn} = undef ;
+	}
+	
+# 	print "[debug http] Testing a FTP server: $self->{DATA}->{host}\n";
+	my $start_time = Time::HiRes::time();
+# 	print "[debug http] \$start_time : $start_time\n";
+	$self->{DATA}->{conn} = Net::FTP->new($self->{DATA}->{host}) or return undef;
+	$self->{DATA}->{conn}->login($self->{DATA}->{config}->{'network-parameters'}->{ftp}->{login},$self->{DATA}->{config}->{'network-parameters'}->{ftp}->{password}) or return undef;
+	my $stop_time = Time::HiRes::time();
+# 	print "[debug http] \$stop_time: $stop_time\n";
+	return ($stop_time - $start_time);
 }
 
-# =head2 function2
-# 
-# =cut
-# 
-# sub function2 {
-# }
+sub _connect 
+{
+	my $self = shift ;
+# 	print "[_connect] test de config\n";
+# 	print "[_connect] config param is $self->{DATA}->{config}\n";
+	return undef if(!defined($self->{DATA}->{config}) && ref($self->{DATA}->{config}) ne 'slackget10::Config') ;
+# 	print "[_connect] test de l'existence d'une connexion\n";
+	unless($self->{DATA}->{conn})
+	{
+# 		print "[_connect] pas de connexion : création\n";
+		$self->{DATA}->{conn} = Net::FTP->new($self->{DATA}->{host}) or return undef;
+# 		print "[_connect] login\n";
+		$self->{DATA}->{conn}->login($self->{DATA}->{config}->{'network-parameters'}->{ftp}->{login},$self->{DATA}->{config}->{'network-parameters'}->{ftp}->{password}) or return undef;
+	}
+# 	print "[_connect] That's all folks\n";
+	return 1;
+}
+
+=head2 _test_current_directory [PRIVATE]
+
+This private methos is used internally each time you require a transfert, for testing if the current directory is the 'path' parameter of the DATA section of the current Connection object.
+
+Do that by sending a PWD command to the server and compare the result with $connection->path.
+
+	$ftp->cwd('/any/remote/directory/') unless($connection->_test_current_directory) ;
+
+Due to the fact that this method is private and internal the example is not really explicit, please look at the code for more informations.
+
+=cut
+
+sub _test_current_directory {
+	my $self = shift ;
+	print "test de connexion\n";
+	$self->_connect or return undef;
+	print "répertoire courant : ",$self->conn->pwd,"\n";
+	print "path : $self->{DATA}->{path}\n";
+	my $tmp_path = $self->conn->pwd ;
+	if( $self->{DATA}->{path}=~/^$tmp_path\/*$/)
+	{
+		return 1;
+	}
+	else
+	{
+		print "CHANGEMENT\n";
+		$self->conn->cwd($self->{DATA}->{path}) or return undef;
+		return 1;
+	}
+}
+
+=head2 get_file
+
+Download and return a given file.
+
+	my $file = $connection->get_file('PACKAGES.TXT') ;
+
+Please note that the Net::FTP module doesn't support a method like that. So, this method is not an encapsulator like the one of HTTP.pm, and use slackget10::File to return the content of the downloaded file.
+
+So you'd better to use fetch_file().
+
+=cut
+
+sub get_file {
+	my ($self,$remote_file) = @_ ;
+	$remote_file = $self->file unless(defined($remote_file)) ;
+	srand (time ^ $$ ^ unpack "%L*", `ps axww | gzip`);
+	my $name = $remote_file.'-' ;
+	for(my $k=0;$k<=20;$k++){
+		$name .= (0..9,'a'..'f')[int(rand(15))];
+	}
+	print "[slackget10::Network::Connection::FTP] temp filename is '$name'\n";
+	$self->_test_current_directory or return undef;
+	$self->conn->get($remote_file,"/tmp/$name") or return undef;
+	my $file = new slackget10::File ("/tmp/$name",'file-encoding' => $self->{DATA}->{config}->{'file-encoding'}) or return undef ;
+	return join "\n",$file->Get_file ;
+# 	return get($self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file);
+}
+
+=head2 fetch_file
+
+Download and store a given file.
+
+	$connection->fetch_file() ; # download the file $connection->file and store it at $config->{common}->{'update-directory'}/$connection->file, this way is not recommended
+	or
+	$connection->fetch_file($remote_file) ; # download the file $remote_file and store it at $config->{common}->{'update-directory'}/$connection->file, this way is not recommended
+	or
+	$connection->fetch_file('PACKAGES.TXT',"$config->{common}->{'update-directory'}/".$current_specialfilecontainer_object->id."/PACKAGES.TXT") ; # This is the recommended way.
+	# This is equivalent to : $connection->fetch_file($remote_file,$local_file) ;
+
+This method return 1 if all goaes well, else return undef.
+=cut
+
+sub fetch_file {
+	my ($self,$remote_file,$local_file) = @_ ;
+	$remote_file = $self->file unless(defined($remote_file));
+	unless(defined($local_file)){
+		if(defined($self->{DATA}->{config})){
+			$remote_file=~ /([^\/]*)$/;
+			$local_file = $self->{DATA}->{config}->{common}->{'update-directory'}.'/'.$1 ;
+		}
+		else{
+			warn "[slackget10::Network::Connection::FTP] No \"config\" parameter detected, I can't determine a path to save $remote_file.\n";
+			return undef;
+		}
+	}
+	print "[debug ftp] save the fetched file (",$remote_file,") to $local_file\n";
+	$self->_test_current_directory or return undef;
+	if($self->conn->get($remote_file,$local_file))
+	{
+		return 1;
+	}
+	else
+	{
+		return undef;
+	}
+}
+
+=head2 fetch_all
+
+This method fetch all files declare in the "files" parameter of the constructor.
+
+	$connection->fetch_all or die "Unable to fetch all files\n";
+
+This method save all files in the $config->{common}->{'update-directory'} directory (so you have to manage yourself the files deletion/replacement problems)
+=cut
+
+sub fetch_all {
+	my $self = shift ;
+	foreach (@{$self->files}){
+		$self->fetch($_) or return undef;
+	}
+	return 1 ;
+}
+
+
+=head2 conn
+
+An accessor which return the current Net::FTP connection object
+
+=cut
+
+sub conn {
+	my $self = shift;
+	return $self->{DATA}->{conn};
+}
 
 =head1 AUTHOR
 

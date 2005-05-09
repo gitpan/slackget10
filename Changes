@@ -22,3 +22,4 @@ Revision history for slackget10
 	- slackget10::ServerList
 	- slackget10::Config (I think it's a new one but I'm not sure :))
 
+0.04	I have recycled the Log class from old slack-get sources, and improved existing classes. The network is now fully supported.

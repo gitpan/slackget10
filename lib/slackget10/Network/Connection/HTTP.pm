@@ -84,7 +84,7 @@ sub test_server {
 
 Download and return a given file.
 
-	my $file = $connection->get('PACKAGES.TXT') ;
+	my $file = $connection->get_file('PACKAGES.TXT') ;
 
 =cut
 

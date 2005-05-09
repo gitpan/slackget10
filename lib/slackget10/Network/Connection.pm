@@ -103,7 +103,7 @@ sub new
 	my ($class,@args) = @_ ;
 	my $self={};
 	bless($self,$class);
-	print "scalar: ",scalar(@args),"\n";
+# 	print "scalar: ",scalar(@args),"\n";
 	if(scalar(@args) < 1){
 		warn "[slackget10::Network::Connection] you must provide at least one argument to my constructor\n" ;
 		return undef ;
@@ -191,6 +191,14 @@ sub parse_url {
 		$self->{DATA}->{host} = $2;
 # 		print "[debug] host is set to $self->{DATA}->{host} fo object $self\n";
 		$self->{DATA}->{file} = $3;
+# 		print "[debug] file is set to $self->{DATA}->{file} fo object $self\n";
+		#if we can extract a file name and a directory path we do.
+		if(defined($self->{DATA}->{file}) && $self->{DATA}->{file}=~ /^(.*\/)([^\/]+)$/i)
+		{
+			$self->{DATA}->{path} = $1;
+			$self->{DATA}->{file} = $2;
+		}
+		
 		return 1;
 	}
 	else{
@@ -221,6 +229,17 @@ sub _fill_data_section {
 	foreach (keys(%{$args})){
 		$self->{DATA}->{$_} = $args->{$_} if(!(defined($self->{DATA}->{$_})));
 	}
+}
+
+sub DEBUG_show_data_section
+{
+	my $self = shift;
+	print "===> DATA section of $self <===\n";
+	foreach (keys(%{$self->{DATA}}))
+	{
+		print "$_ : $self->{DATA}->{$_}";
+	}
+	print "===> END DATA section <===\n";
 }
 
 =head1 ACCESSORS

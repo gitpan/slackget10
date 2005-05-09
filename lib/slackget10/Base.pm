@@ -7,6 +7,8 @@ require XML::Simple ;
 require slackget10::PackageList;
 require slackget10::Package;
 require slackget10::File;
+require slackget10::Server;
+require slackget10::ServerList ;
 
 
 =head1 NAME
@@ -240,6 +242,27 @@ sub load_packages_list_from_xml_file {
 	return $ref;
 }
 
+
+=head2 load_server_list_from_xml_file
+
+Load a server list from a servers.xml file.
+
+	$serverlist = $base->load_server_list_from_xml_file('servers.xml');
+
+=cut
+
+sub load_server_list_from_xml_file {
+	my ($self,$file) = @_;
+	my $server_list = new slackget10::ServerList ;
+	my $xml_in = XML::Simple::XMLin($file,KeyAttr => {'server' => 'id'});
+	foreach my $server_name (keys(%{$xml_in->{'server'}})){
+		my $server = new slackget10::Server ($server_name);
+		$server->fill_object_from_xml( $xml_in->{server}->{$server_name} );
+# 		$server->print_info ;print "\n\n";
+		$server_list->add($server);
+	}
+	return $server_list;
+}
 
 
 =head2 set_include_file_list

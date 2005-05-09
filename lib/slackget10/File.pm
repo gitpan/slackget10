@@ -100,7 +100,7 @@ sub Read
                 return undef ;
         }
         my $tmp;
-        my @file;
+        my @file = ();
         open (F2,"<:encoding($self->{'file-encoding'})",$file);
         while (defined($tmp=<F2>))
         {
@@ -110,6 +110,92 @@ sub Read
 	$self->{FILE} = \@file ;
         return 1;
 
+}
+
+=head2 Lock_file
+
+This method lock the file for slack-get application (not really for others...) by creating a file with the name of the current open file plus a ".lock". This is not a protection but an information system for slack-getd sub process. This method return undef if the lock can't be made.
+
+	my $file = new slackget10::File ('test.txt');
+	$file->Lock_file ; # create a file test.txt.lock
+
+ATTENTION: You can only lock the current file of the object. With the previous example you can't do :
+
+	$file->Lock_file('toto.txt') ;
+
+ATTENTION 2 : Don't forget to unlock your locked file :)
+
+=cut
+
+sub Lock_file
+{
+	my $self = shift;
+	return undef if $self->is_locked ;
+	Write({'file-encoding'=>$self->{'file-encoding'}},"$self->{FILENAME}.lock",$self) or return undef;
+	return 1;
+}
+
+=head2 Unlock_file
+
+Unlock a locked file. Only the locker object can unlock a file ! Return 1 if all goes well, else return undef. Return 2 if the file was not locked. Return 0 (false in scalar context) if the file was locked but by another slackget10::File object.
+
+	my $status = $file->Unlock_file ;
+
+=cut
+
+sub Unlock_file
+{
+	my $self = shift;
+	if($self->is_locked)
+	{
+		if($self->_verify_lock_maker)
+		{
+			unlink "$self->{FILENAME}.lock" or return undef ;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	else
+	{
+		return 2;
+	}
+	return 1;
+}
+
+sub _verify_lock_maker
+{
+	my $self = shift;
+	my $file = new slackget10::File ("$self->{FILENAME}.lock");
+	my $locker = $file->Get_line(0) ;
+	$file->Close ;
+	undef($file);
+	my $object = ''.$self;
+# 	print "[debug file] compare object=$object and locker=$locker\n";
+	if($locker eq $object)
+	{
+		return 1;
+	}
+	else
+	{
+		return undef;
+	}
+}
+
+=head2 is_locked
+
+Return 1 if the file is locked by a slackget10::File object, else return undef.
+
+	print "File is locked\n" if($file->is_locked);
+
+=cut
+
+sub is_locked
+{
+	my $self = shift;
+	return 1 if(-e "$self->{FILENAME}.lock");
+	return undef;
 }
 
 =head2 Write
@@ -237,6 +323,28 @@ sub Write_and_close{
 	my ($self,$file) = @_;
 	$self->Write($file);
 	$self->Close();
+}
+
+=head2 encoding
+
+Without parameter return the current file encoding, with a parameter set the encoding for the current file.
+
+	print "The current file encoding is ",$file->encoding,"\n"; # return the current encoding
+	$file->encoding('utf8'); # set the current file encoding to utf8
+
+=cut
+
+sub encoding
+{
+	my ($self,$encoding) = @_;
+	if(defined($encoding))
+	{
+		$self->{'file-encoding'} = $encoding ;
+	}
+	else
+	{
+		return $self->{'file-encoding'};
+	}
 }
 
 =head1 AUTHOR
