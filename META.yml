@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: slackget10
-version: 0.04
+version: 0.05
 author:
   - DUPUIS Arnaud <a.dupuis@infinityperl.org>
 abstract: The main slack-get 1.0 library

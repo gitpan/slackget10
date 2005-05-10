@@ -4,6 +4,8 @@ Changes
 MANIFEST
 META.yml # Will be created by "make dist"
 README
+config.xml
+servers.xml
 packdir2xml
 lib/slackget10.pm
 lib/slackget10/Base.pm
@@ -26,6 +28,7 @@ lib/slackget10/SpecialFileContainer.pm
 lib/slackget10/SpecialFiles/CHECKSUMS.pm
 lib/slackget10/SpecialFiles/FILELIST.pm
 lib/slackget10/SpecialFiles/PACKAGES.pm
+t/slack-getd
 t/00-load.t
 t/pod-coverage.t
 t/pod.t

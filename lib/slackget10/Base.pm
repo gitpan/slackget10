@@ -110,6 +110,7 @@ sub compil_packages_directory
 	my $packagelist = new slackget10::PackageList ;
 	foreach (@files)
 	{
+# 		print "[DEBUG] in slackget10::Base, method compil_package_directory file-encoding=$self->{CONF}->{common}->{'file-encoding'}\n";
 		my $sg_file = new slackget10::File ($_,'file-encoding' => $self->{CONF}->{common}->{'file-encoding'}) ;
 		die $! unless $sg_file;
 		my @file = $sg_file->Get_file();

@@ -51,12 +51,13 @@ Take a file, a slackget10::Config object and an id name :
 sub new
 {
 	my ($class,$file,$config,$root) = @_ ;
-	return undef if(!defined($config) && $config ne 'slackget10::Config') ;
+	return undef if(!defined($config) && ref($config) ne 'slackget10::Config') ;
 	my $self={};
 	return undef unless(defined($file) && -e $file);
-	print "Loading $file as PACKAGES\n";
+	print "[debug PACKAGES] Loading $file as PACKAGES\n";
 	$self->{ROOT} = $root;
-	$self->{FILE} = new slackget10::File ($file);
+	$self->{config}=$config;
+	$self->{FILE} = new slackget10::File ($file,'file-encoding' => $config->{common}->{'file-encoding'});
 	$self->{DATA} = {};
 	$self->{METADATA} = {};
 	bless($self,$class);
@@ -77,6 +78,7 @@ sub compile {
 		my $pack = new slackget10::Package (1);
 		$pack->setValue('package-source',$self->{ROOT}) if($self->{ROOT});
 		$pack->extract_informations($_);
+		$pack->grab_info_from_description ;
 		print STDERR "Error: informations extraction have failed\n" if(!$pack->get_id);
 # 		print "PACKAGING of ",$pack->get_id,"\n";$pack->print_full_info;
 		$self->{DATA}->{$pack->get_id} = $pack ;

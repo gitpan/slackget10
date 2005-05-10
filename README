@@ -4,6 +4,8 @@ The slackget10 module is the core library of the release 1.0 of slack-get (http:
 This library is still in development and all version 0.0* are CVS snapshots ! And this is highly possible that they didn't works at all !!!
 For exemple the 0.02 version was bugged.
 
+WARNING: the make test fail, because I don't provide a test suite for the moment.
+
 INSTALLATION
 
 To install this module, run the following commands:

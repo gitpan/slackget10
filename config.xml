@@ -1,0 +1,64 @@
+<slack-get>
+	<!-- options common to all parts of slack-get -->
+	<common>
+		<update-directory>/home/1024/progz/slack-get/V1.0/slack-get/test/update</update-directory>
+		<server-list-file>/home/1024/progz/slack-get/V1.0/slack-get/conf/servers_sample.xml</server-list-file>
+		<packages-history-dir>/var/log/packages</packages-history-dir>
+		<!-- response time below which the servers are considered as slow -->
+		<fast-connection-limit>1</fast-connection-limit>
+		<!-- NEVER CHANGE THIS VALUE BY YOURSELF -->
+		<conf-version>3</conf-version>
+		<file-encoding>iso-8859-1</file-encoding>
+		<slackware-version>current</slackware-version>
+		<verify-gpg-signature>yes</verify-gpg-signature>
+		<verify-checksum>yes</verify-checksum>
+		<network-parameters> 
+			<ftp>
+				<login>anonymous</login>
+				<password>slack-get@infinityperl.org</password>
+			</ftp>
+		</network-parameters>
+		<log>
+			<log-format>[ %d/%m/%y AT %h H %n min %s sec ] &lt;%P %V&gt; %M</log-format>
+			<log-level>2</log-level>
+			<log-file>/home/1024/progz/slack-get/V1.0/slack-get/test/slack-get.log</log-file>
+		</log>
+		<pkgtools>
+			<installpkg-binary>/sbin/installpkg</installpkg-binary>
+			<upgradepkg-binary>/sbin/upgradepkg</upgradepkg-binary>
+			<removepkg-binary>/sbin/removepkg</removepkg-binary>
+		</pkgtools>
+		<default-browser>konqueror</default-browser>
+		<kde>
+			<!-- Allow slack-get to use DCOP communication for using knotify to notify you the result of some events -->
+			<enable-kde-notification>yes</enable-kde-notification>
+			<!-- When it's possible replace native Qt dialog widgets by KDE ones (with calls to kdialog) -->
+			<use-kde-dialog>yes</use-kde-dialog>
+		</kde>
+	</common>
+	<!-- sack-getd's particular settings -->
+	<daemon>
+		<pid-file>/home/1024/progz/slack-get/V1.0/slack-get/test/slack-getd.pid</pid-file> 
+		<installed-packages-list>
+			<build-on-update>yes</build-on-update>
+			<build-each>30</build-each> <!-- build installed.xml each <build-each> minutes -->
+		</installed-packages-list>
+		<update-list>
+			<build-each>15</build-each>
+			<build-on-start>yes</build-on-start>
+		</update-list>
+		<!-- mode is one of the followings: master, slave, alone -->
+		<mode>master</mode>
+		<listenning-port>42000</listenning-port>
+		<!-- if mode is 'alone' the listenning-adress is automatically the localhost -->
+		<listenning-adress>127.0.0.1</listenning-adress>
+		<start-on-boot>yes</start-on-boot>
+	</daemon>
+	<!-- slack-browser's particular settings -->
+	<gui>
+		<language>english</language>
+	</gui>
+	<!-- slack-get's (command line tool) particular settings -->
+	<command>
+	</command>
+</slack-get> 

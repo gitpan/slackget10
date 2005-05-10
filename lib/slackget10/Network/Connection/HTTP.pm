@@ -71,6 +71,7 @@ sub test_server {
 	my $server = "$self->{DATA}->{protocol}://$self->{DATA}->{host}/";
 	$server .= $self->{DATA}->{path}.'/' if($self->{DATA}->{path});
 	$server .= 'FILELIST.TXT';
+	$server = $self->strip_slash($server);
 # 	print "[debug http] Testing a HTTP server: $server\n";
 	my $start_time = Time::HiRes::time();
 # 	print "[debug http] \$start_time : $start_time\n";
@@ -91,7 +92,7 @@ Download and return a given file.
 sub get_file {
 	my ($self,$remote_file) = @_ ;
 	$remote_file = $self->file unless(defined($remote_file)) ;
-	return get($self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file);
+	return get($self->strip_slash($self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file));
 }
 
 =head2 fetch_file
@@ -121,8 +122,10 @@ sub fetch_file {
 			return undef;
 		}
 	}
-	print "[debug http] save the fetched file (",$self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file,") to $local_file\n";
-	if(is_success(getstore($self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file,$local_file))){
+	my $url = $self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file;
+	$url = $self->strip_slash($url);
+	print "[debug http] save the fetched file ($url) to $local_file\n";
+	if(is_success(getstore($url,$local_file))){
 		return 1;
 	}
 	else

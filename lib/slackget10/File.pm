@@ -41,10 +41,10 @@ sub new
 	my $self={%args};
 # 	print "\nActual file-encoding: $self->{'file-encoding'}\nargs : $args{'file-encoding'}\nFile: $file\n";<STDIN>;
 	bless($self,$class);
-	$self->{'file-encoding'} = 'utf-8' unless(defined($self->{'file-encoding'}));
-# 	print "using $self->{'file-encoding'} as file-encoding\n";<STDIN>;
+	$self->{'file-encoding'} = 'utf8' unless(defined($self->{'file-encoding'})); #FIXME: trouver pourquoi ça ne fonctionne pas en utf8 (à un moment une classe ne propage pas l'encodage!)
+# 	print "using $self->{'file-encoding'} as file-encoding for file $file\n";
 	$self->{FILENAME} = $file;
-	if(defined($file) && -e $file){
+	if(defined($file) && -e $file && !defined($self->{'no-auto-load'})){
 		$self->Read();
 	}
 	else
@@ -66,6 +66,10 @@ Take a filename as argument.
 Additionnaly you can pass an file encoding (default is utf8). For example as a European I prefer that files are stored and compile in the iso-8859-1 charset so I use the following :
 
 	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1');
+
+You can also disabling the auto load of the file by passing a parameter 'no-auto-load' => 1 :
+
+	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1', 'no-auto-load' => 1);
 
 =head1 FUNCTIONS
 

@@ -23,3 +23,9 @@ Revision history for slackget10
 	- slackget10::Config (I think it's a new one but I'm not sure :))
 
 0.04	I have recycled the Log class from old slack-get sources, and improved existing classes. The network is now fully supported.
+
+0.05	Wed May 11 01:05:26 CEST 2005
+	This new version correct some bugs, fully support the network, and I am now sure that a large part of the module works fine. 
+	You can test a large part of functionnality by using the slack-getd perl script in the t/ directory.
+	In this version there is a lot of debug print, if you want to test the slack-getd daemon you have to custom the config.xml file.
+	The servers.xml can be used as it.

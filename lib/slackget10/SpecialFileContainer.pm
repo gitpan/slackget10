@@ -33,11 +33,13 @@ Parameters are :
 	FILELIST => the FILELIST.TXT filename
 	PACKAGES => the PACKAGES.TXT filename
 	CHECKSUMS => the CHECKSUMS.md5 filename
+	config => a slackget10::Config object.
 
     use slackget10::SpecialFileContainer;
 
     my $container = slackget10::SpecialFileContainer->new(
     	'slackware',
+	config => $config,
     	FILELIST => /home/packages/update_files/FILELIST.TXT,
 	PACKAGES => /home/packages/update_files/PACKAGES.TXT,
 	CHECKSUMS => /home/packages/update_files/CHECKSUMS.md5
@@ -57,9 +59,10 @@ sub new
 		warn "[slackget10::SpecialFileContainer] Required parameter FILELIST, PACKAGES or CHECKSUMS not found in the contructor\n";
 		return undef;
 	}
-	$self->{DATA}->{FILELIST} = slackget10::SpecialFiles::FILELIST->new($args{FILELIST},$root) or return undef;
-	$self->{DATA}->{PACKAGES} = slackget10::SpecialFiles::PACKAGES->new($args{PACKAGES},$root) or return undef;
-	$self->{DATA}->{CHECKSUMS} = slackget10::SpecialFiles::CHECKSUMS->new($args{CHECKSUMS},$root) or return undef;
+	$self->{DATA}->{config} = $args{config} if(defined($args{config}) && ref($args{config}) eq 'slackget10::Config');
+	$self->{DATA}->{FILELIST} = slackget10::SpecialFiles::FILELIST->new($args{FILELIST},$self->{DATA}->{config},$root) or return undef;
+	$self->{DATA}->{PACKAGES} = slackget10::SpecialFiles::PACKAGES->new($args{PACKAGES},$self->{DATA}->{config},$root) or return undef;
+	$self->{DATA}->{CHECKSUMS} = slackget10::SpecialFiles::CHECKSUMS->new($args{CHECKSUMS},$self->{DATA}->{config},$root) or return undef;
 	bless($self);#,$class
 	return $self;
 }

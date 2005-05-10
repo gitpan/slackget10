@@ -56,12 +56,13 @@ The constructor return undef if the file does not exist.
 sub new
 {
 	my ($class,$file,$config,$root) = @_ ;
-	return undef if(!defined($config) && $config ne 'slackget10::Config') ;
+	return undef if(!defined($config) && ref($config) ne 'slackget10::Config') ;
 	my $self={};
 	$self->{ROOT} = $root;
+	$self->{config}=$config;
 	return undef unless(defined($file) && -e $file);
-	print "Loading $file as FILELIST\n";
-	$self->{FILE} = new slackget10::File ($file);
+# 	print "[debug FILELIST] Loading $file as FILELIST\n";
+	$self->{FILE} = new slackget10::File ($file,'file-encoding' => $config->{common}->{'file-encoding'});
 	$self->{DATA} = {};
 	bless($self,$class);
 	return $self;
@@ -184,7 +185,7 @@ return a string containing all packages name carriage return separated.
 
 WARNING: ONLY FOR DEBUG
 
-	my $string = $spec_file->to_string();
+	my $string = $list->to_string();
 
 =cut
 
@@ -195,6 +196,23 @@ sub to_XML {
 		$xml .= $self->{DATA}->{$_}->to_XML ;
 	}
 	$xml .= "</filelist>\n";
+	return $xml;
+}
+
+=head2 meta_to_XML
+
+Return an XML encoded string which represent the meta informations of the FILELIST.TXT file.
+
+	my $xml_string = $list->meta_to_XML ;
+
+=cut
+
+sub meta_to_XML
+{
+	my $self = shift;
+	my $xml = "\t<filelist>\n";
+	$xml .= "\t\t".$self->get_date()->to_XML()."\n" if(defined($self->get_date));
+	my $xml = "\t</filelist>\n";
 	return $xml;
 }
 

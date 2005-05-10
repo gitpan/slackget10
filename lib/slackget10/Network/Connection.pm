@@ -120,7 +120,8 @@ sub new
 	else{
 		my %args = @args;
 		warn "[slackget10::Network::Connection] You need to provide a \"config\" parameter with a valid slackget10::Config object reference.\n" && return undef if(!defined($args{config}) && ref($args{config}) ne 'slackget10::Config') ;
-		if(exists($args{host}) && (exists($args{path}) || exists($args{file}) ) && exists($args{config}) && ref($args{config}) eq 'slackget10::Config' ){
+		if(exists($args{host}) && exists($args{config}) && ref($args{config}) eq 'slackget10::Config' ) #(exists($args{path}) || exists($args{file}) ) && 
+		{
 			parse_url($self,$args{host}) or return undef;
 			_load_network_module($self) or return undef;
 			_fill_data_section($self,\%args);
@@ -128,7 +129,7 @@ sub new
 		}
 		else
 		{
-			warn "[slackget10::Network::Connection] you must provide the following parameters to the constructor :\n\thost\n\tpath\n\tconfig\n" ;
+			warn "[slackget10::Network::Connection] you must provide the following parameters to the constructor :\n\thost\n\tconfig\n" ;
 			return undef ;
 		}
 		%args = ();
@@ -193,7 +194,7 @@ sub parse_url {
 		$self->{DATA}->{file} = $3;
 # 		print "[debug] file is set to $self->{DATA}->{file} fo object $self\n";
 		#if we can extract a file name and a directory path we do.
-		if(defined($self->{DATA}->{file}) && $self->{DATA}->{file}=~ /^(.*\/)([^\/]+)$/i)
+		if(defined($self->{DATA}->{file}) && $self->{DATA}->{file}=~ /^(.*\/)([^\/]*)$/i)
 		{
 			$self->{DATA}->{path} = $1;
 			$self->{DATA}->{file} = $2;
@@ -203,6 +204,24 @@ sub parse_url {
 	}
 	else{
 		return 0 ;
+	}
+}
+
+sub strip_slash
+{
+	my ($self,$url) = @_;
+	$url=~ s/\/+/\//g;
+	if($url=~ /\/{2,}/)
+	{
+		print "recusrion on $url\n";
+		$self->strip_slash($url);
+	}
+	else
+	{
+		$url=~ s/http:\//http:\/\//;
+		$url=~ s/ftp:\//ftp:\/\//;
+		print "return $url\n";
+		return $url;
 	}
 }
 

@@ -13,7 +13,7 @@ Version 0.03b
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
@@ -30,6 +30,8 @@ The development is now concentrate on the libraries needed by slackgetd.
 
     my $foo = slackget10->new();
     ...
+
+=cut
 
 # =head1 CONSTRUCTOR
 # 

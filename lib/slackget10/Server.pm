@@ -306,7 +306,7 @@ sub to_string
 	return $str ;
 }
 
-=head3 ACCESSORS
+=head1 ACCESSORS
 
 Some accessors for the current object/
 
@@ -366,7 +366,7 @@ sub shortname {
 
 =cut
 
-=head3 FORMATTED OUTPUT
+=head1 FORMATTED OUTPUT
 
 Different methods to properly output a server.
 
