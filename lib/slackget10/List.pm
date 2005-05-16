@@ -156,6 +156,20 @@ sub to_string{
 	$self->to_XML();
 }
 
+=head2 Length
+
+Return the length of the current list.
+
+	$list->Length ;
+
+=cut
+
+sub Length
+{
+	my $self = shift;
+	return scalar(@{$self->{LIST}});
+}
+
 
 =head1 AUTHOR
 

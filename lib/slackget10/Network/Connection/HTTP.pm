@@ -4,8 +4,10 @@ use warnings;
 use strict;
 
 use LWP::Simple ;
+require HTTP::Status ;
 require slackget10::Network::Connection ;
 require Time::HiRes ;
+require slackget10::Status ;
 
 =head1 NAME
 
@@ -106,7 +108,18 @@ Download and store a given file.
 	$connection->fetch_file('PACKAGES.TXT',"$config->{common}->{'update-directory'}/".$current_specialfilecontainer_object->id."/PACKAGES.TXT") ; # This is the recommended way.
 	# This is equivalent to : $connection->fetch_file($remote_file,$local_file) ;
 
-This method return 1 if all goaes well, else return undef.
+This method return a slackget10::Status object with the following object declaration :
+
+	my $status =  slackget10::Status->new(codes => {
+		0 => "All goes well. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		1 => "Server error, you must choose the next host for this server. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		2 => "Client error, it seems that you have a problem with you connection or with the slackget10 library (or with a library which we depended on). Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		3 => "Server has redirected us, we prefer direct connection, change host for this server. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		4 => "The HTTP connection is not a success and we are not able to know what, we recommend to change the current host of this server. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n"
+	});
+
+This is the direct code of this method :)
+
 =cut
 
 sub fetch_file {
@@ -124,14 +137,40 @@ sub fetch_file {
 	}
 	my $url = $self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file;
 	$url = $self->strip_slash($url);
-	print "[debug http] save the fetched file ($url) to $local_file\n";
-	if(is_success(getstore($url,$local_file))){
-		return 1;
+# 	print "[debug http] save the fetched file ($url) to $local_file\n";
+	my $ret_code = getstore($url,$local_file) ;
+	my $state =  slackget10::Status->new(codes => {
+		0 => "All goes well. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		1 => "Server error, you must choose the next host for this server. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		2 => "Client error, it seems that you have a problem with you connection or with the slackget10 library (or with a library which we depended on). Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		3 => "Server has redirected us, we prefer direct connection, change host for this server. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n",
+		4 => "The HTTP connection is not a success and we are not able to know what, we recommend to change the current host of this server. Server said:\n\t$ret_code - ".status_message( $ret_code )."\n"
+	});
+	if(is_success($ret_code)){
+		$state->current(0);
 	}
 	else
 	{
-		return undef;
+		if(HTTP::Status::is_server_error($ret_code))
+		{
+			
+			$state->current(1);
+			
+		}
+		elsif(HTTP::Status::is_client_error($ret_code))
+		{
+			$state->current(2);
+		}
+		elsif(HTTP::Status::is_redirect($ret_code))
+		{	
+			$state->current(3);	
+		}
+		else
+		{
+			$state->current(4);
+		}
 	}
+	return $state;
 }
 
 =head2 fetch_all

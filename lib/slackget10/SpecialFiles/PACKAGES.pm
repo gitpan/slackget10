@@ -54,7 +54,7 @@ sub new
 	return undef if(!defined($config) && ref($config) ne 'slackget10::Config') ;
 	my $self={};
 	return undef unless(defined($file) && -e $file);
-	print "[debug PACKAGES] Loading $file as PACKAGES\n";
+# 	print "[debug PACKAGES] Loading $file as PACKAGES\n";
 	$self->{ROOT} = $root;
 	$self->{config}=$config;
 	$self->{FILE} = new slackget10::File ($file,'file-encoding' => $config->{common}->{'file-encoding'});
@@ -122,7 +122,7 @@ sub get_meta {
 	my $l = 0;
 	foreach ($self->{FILE}->Get_selection(0,15)){
 		if($_=~ /PACKAGES.TXT;  (\w+) (\w+)  (\d+) ([\d:]+) (\w+) (\d+)/){
-			$self->{METADATA}->{date} = new slackget10::Date (
+			$self->{METADATA}->{'date'} = new slackget10::Date (
 				'day-name' => $1,
 				'day-number' => $3,
 				'month' => $2,
@@ -177,7 +177,7 @@ return a slackget10::Date object, which is the date of the PACKAGES.TXT
 
 sub get_date {
 	my $self = shift;
-	return $self->{METADATA}->{date} ;
+	return $self->{METADATA}->{'date'} ;
 }
 
 

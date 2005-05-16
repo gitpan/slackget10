@@ -9,6 +9,7 @@ require slackget10::Package;
 require slackget10::File;
 require slackget10::Server;
 require slackget10::ServerList ;
+require slackget10::Date ;
 
 
 =head1 NAME
@@ -152,10 +153,10 @@ sub compil_packages_directory
 					$k++;
 				}
 				$pack->setValue('description',"$tmp\n\t\t");
-				### FIXME: On my system, with 586 packages installed the difference between with or without including the file list is very important
-				### FIXME: with the file list the installed.xml file size is near 11 MB
-				### FIXME: without the file list, the size is only 400 KB !!
-				### FIXME: So I have decided that the file list is not include by default
+				### NOTE: On my system, with 586 packages installed the difference between with or without including the file list is very important
+				### NOTE: with the file list the installed.xml file size is near 11 MB
+				### NOTE: without the file list, the size is only 400 KB !!
+				### NOTE: So I have decided that the file list is not include by default
 				if(defined($self->{'include-file-list'}))
 				{
 					$pack->setValue('file-list',join("\t\t\t",@file[($k+1)..$#file])."\n\t\t");
@@ -231,10 +232,18 @@ sub load_packages_list_from_xml_file {
 	foreach my $group (keys(%{$xml_in})){
 		my $package_list = new slackget10::PackageList ;
 		foreach my $pack_name (keys(%{$xml_in->{$group}->{'package'}})){
-			#TODO: finir
+			#TODO: finir..quoi j'en sais rien...Par contre je sais pas si c'est une bonne idée de séparer les PackageList.
 			my $package = new slackget10::Package ($pack_name);
 			foreach my $key (keys(%{$xml_in->{$group}->{'package'}->{$pack_name}})){
-				$package->setValue($key,$xml_in->{$group}->{'package'}->{$pack_name}->{$key}) ;
+				if($key eq 'date')
+				{
+					$package->setValue($key,slackget10::Date->new(%{$xml_in->{$group}->{'package'}->{$pack_name}->{$key}}));
+				}
+				else
+				{
+					$package->setValue($key,$xml_in->{$group}->{'package'}->{$pack_name}->{$key}) ;
+				}
+				
 			}
 			$package_list->add($package);
 		}

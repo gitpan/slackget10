@@ -60,7 +60,7 @@ sub new
 	$self->{ROOT} = $root;
 	$self->{config}=$config;
 	return undef unless(defined($file) && -e $file);
-	print "[debug CHECKSUMS] Loading $file as CHECKSUMS\n";
+# 	print "[debug CHECKSUMS] Loading $file as CHECKSUMS\n";
 	$self->{FILE} = new slackget10::File ($file,'file-encoding' => $config->{common}->{'file-encoding'});
 	$self->{DATA} = {};
 	bless($self,$class);

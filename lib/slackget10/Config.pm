@@ -219,6 +219,39 @@ sub check_config
 		print STDERR  "no\n";
 		$fatal++;
 	}
+	print STDERR  "\tchecking for options '<connection-policy>'...";
+	if(exists($self->{'daemon'}->{'connection-policy'}) && defined($self->{'daemon'}->{'connection-policy'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\t\tchecking for options '<all>'...";
+	if(exists($self->{'daemon'}->{'connection-policy'}->{'all'}) && defined($self->{'daemon'}->{'connection-policy'}->{'all'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		$fatal++;
+	}
+	print STDERR  "\t\tchecking for options '<host>'...";
+	if(exists($self->{'daemon'}->{'connection-policy'}->{'host'}) && defined($self->{'daemon'}->{'connection-policy'}->{'host'}))
+	{
+		print STDERR  "ok\n";
+	}
+	else
+	{
+		print STDERR  "no\n";
+		if(defined($self->{'daemon'}->{'connection-policy'}->{'all'}) && defined($self->{'daemon'}->{'connection-policy'}->{'all'}->{'allow-connection'}) &&  $self->{'daemon'}->{'connection-policy'}->{'all'}->{'allow-connection'}=~ /no/i)
+		{
+			print STDERR "** WARNING ** You don't have <host> section in your configuration file and the <all> section forbid connection ! Nobody can connect to your daemon !!!\n";
+		}
+	}
 	
 # 	print STDERR  "checking for options ''...";
 # 	if(exists($self->{''}) && defined($self->{''}))
@@ -267,7 +300,7 @@ sub check_config
 	}
 	else
 	{
-		print STDERR  "\n\nSTATUS : the configuration file seems to be good\n";
+		print STDERR  "\n\nSTATUS : the configuration file seems to be good (at least there is no fatal errors...)\n";
 	}
 	return $fatal;
 }

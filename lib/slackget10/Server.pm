@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-slackget10::Server - A to represent a server from the servers.xml file.
+slackget10::Server - A class to represent a server from the servers.xml file.
 
 =head1 VERSION
 
@@ -382,6 +382,13 @@ sub to_XML
 {
 	my $self = shift;
 	return undef unless(defined($self->{ID}));
+	if($self->{DATA}->{hosts}->{old})
+	{
+		$self->{DATA}->{hosts}->{slow} = [@{$self->{DATA}->{hosts}->{slow}},@{$self->{DATA}->{hosts}->{old}}] ;
+		$self->{DATA}->{hosts}->{old} = undef;
+		delete($self->{DATA}->{hosts}->{old});
+	}
+	
 	my $xml = "\t<server id=\"$self->{ID}\">\n";
 	$xml .= "\t\t<web-link>".$self->url."</web-link>\n";
 	$xml .= "\t\t<description>".$self->description."</description>\n";

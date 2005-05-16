@@ -3,8 +3,6 @@ package slackget10::Network::Connection;
 use warnings;
 use strict;
 
-use lib '/home/1024/progz/slack-get/V1.0/slack-get/lib/slackget10/lib'; # ONLY FOR DEBUG !!!
-
 require slackget10::Network::Connection::FTP ;
 require slackget10::Network::Connection::HTTP ;
 
@@ -135,7 +133,9 @@ sub new
 		%args = ();
 	}
 	@args = ();
-	
+# 	$self->{STATUS} = {
+# 		0 => "All's good\n";
+# 	};
 	
 	return $self;
 }
@@ -213,14 +213,12 @@ sub strip_slash
 	$url=~ s/\/+/\//g;
 	if($url=~ /\/{2,}/)
 	{
-		print "recusrion on $url\n";
 		$self->strip_slash($url);
 	}
 	else
 	{
 		$url=~ s/http:\//http:\/\//;
 		$url=~ s/ftp:\//ftp:\/\//;
-		print "return $url\n";
 		return $url;
 	}
 }

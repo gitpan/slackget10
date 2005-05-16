@@ -29,3 +29,8 @@ Revision history for slackget10
 	You can test a large part of functionnality by using the slack-getd perl script in the t/ directory.
 	In this version there is a lot of debug print, if you want to test the slack-getd daemon you have to custom the config.xml file.
 	The servers.xml can be used as it.
+0.06	Mon May 16 14:55:17 CEST 2005
+	Add the followings modules :
+	- slackget10::Network::Auth
+	- slackget10::Status
+	- slackget10::PkgTools

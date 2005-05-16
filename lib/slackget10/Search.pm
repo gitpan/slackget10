@@ -54,7 +54,7 @@ sub search_package {
 	my ($self,$string) = @_ ;
 	my @result;
 	foreach (@{$self->{PKGLIST}->get_all()}){
-		if($_->name() =~ /$string/i){
+		if($_->get_id() =~ /$string/i or $_->name() =~ /$string/i){
 			push @result, $_;
 		}
 	}
@@ -73,7 +73,7 @@ sub search_package_in_description {
 	my ($self,$string) = @_ ;
 	my @result;
 	foreach (@{$self->{PKGLIST}->get_all()}){
-		if($_->description() =~ /$string/i){
+		if($_->get_id() =~ /$string/i or $_->description() =~ /$string/i){
 			push @result, $_;
 		}
 	}
@@ -94,7 +94,7 @@ sub search_package_multi_fields {
 	foreach (@{$self->{PKGLIST}->get_all()}){
 		foreach my $field (@fields)
 		{
-			if(defined($_->getValue($field))&& $_->getValue($field)=~ /$string/i){
+			if($_->get_id() =~ /$string/i or (defined($_->getValue($field))&& $_->getValue($field)=~ /$string/i)){
 				push @result, $_;
 				last;
 			}

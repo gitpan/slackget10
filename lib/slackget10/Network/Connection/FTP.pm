@@ -115,10 +115,10 @@ Due to the fact that this method is private and internal the example is not real
 
 sub _test_current_directory {
 	my $self = shift ;
-	print "test de connexion\n";
+# 	print "test de connexion\n";
 	$self->_connect or return undef;
-	print "répertoire courant : ",$self->conn->pwd,"\n";
-	print "path : $self->{DATA}->{path}\n";
+# 	print "répertoire courant : ",$self->conn->pwd,"\n";
+# 	print "path : $self->{DATA}->{path}\n";
 	my $tmp_path = $self->conn->pwd ;
 	if( $self->{DATA}->{path}=~/^$tmp_path\/*$/)
 	{
@@ -126,7 +126,7 @@ sub _test_current_directory {
 	}
 	else
 	{
-		print "CHANGEMENT\n";
+# 		print "CHANGEMENT\n";
 		$self->conn->cwd($self->{DATA}->{path}) or return undef;
 		return 1;
 	}
@@ -152,7 +152,7 @@ sub get_file {
 	for(my $k=0;$k<=20;$k++){
 		$name .= (0..9,'a'..'f')[int(rand(15))];
 	}
-	print "[slackget10::Network::Connection::FTP] temp filename is '$name'\n";
+# 	print "[slackget10::Network::Connection::FTP] temp filename is '$name'\n";
 	$self->_test_current_directory or return undef;
 	$self->conn->get($remote_file,"/tmp/$name") or return undef;
 	my $file = new slackget10::File ("/tmp/$name",'file-encoding' => $self->{DATA}->{config}->{'file-encoding'}) or return undef ;
@@ -171,7 +171,14 @@ Download and store a given file.
 	$connection->fetch_file('PACKAGES.TXT',"$config->{common}->{'update-directory'}/".$current_specialfilecontainer_object->id."/PACKAGES.TXT") ; # This is the recommended way.
 	# This is equivalent to : $connection->fetch_file($remote_file,$local_file) ;
 
-This method return 1 if all goaes well, else return undef.
+This method return a slackget10::Status object with the following object declaration :
+
+	my $status =  slackget10::Status->new(codes => {
+		0 => "All goes well.\n",
+		1 => "An error occured "
+	});
+
+
 =cut
 
 sub fetch_file {
@@ -187,16 +194,21 @@ sub fetch_file {
 			return undef;
 		}
 	}
-	print "[debug ftp] save the fetched file (",$remote_file,") to $local_file\n";
+# 	print "[debug ftp] save the fetched file (",$remote_file,") to $local_file\n";
 	$self->_test_current_directory or return undef;
+	my $state =  slackget10::Status->new(codes => {
+		0 => "All goes well.\n",
+		1 => "An error occured, we recommend to change this server's host.\n"
+	});
 	if($self->conn->get($remote_file,$local_file))
 	{
-		return 1;
+		$state->current(0);
 	}
 	else
 	{
-		return undef;
+		$state->current(1);
 	}
+	return $state;
 }
 
 =head2 fetch_all

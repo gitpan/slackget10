@@ -82,7 +82,7 @@ sub compile {
 	my $self = shift;
 	if($self->{FILE}->Get_line(0)=~ /(\w+) (\w+)  (\d+) ([\d:]+) \w+ (\d+)/)  # match a date like : Tue Apr  5 12:56:29 PDT 2005
 	{
-		$self->{METADATA}->{date} = new slackget10::Date (
+		$self->{METADATA}->{'date'} = new slackget10::Date (
 			'day-name' => $1,
 			'day-number' => $3,
 			'month' => $2,
@@ -176,7 +176,7 @@ return a slackget10::Date object, which is the date of the FILELIST.TXT
 
 sub get_date {
 	my $self = shift;
-	return $self->{METADATA}->{date} ;
+	return $self->{METADATA}->{'date'} ;
 }
 
 =head2 to_XML
@@ -212,7 +212,7 @@ sub meta_to_XML
 	my $self = shift;
 	my $xml = "\t<filelist>\n";
 	$xml .= "\t\t".$self->get_date()->to_XML()."\n" if(defined($self->get_date));
-	my $xml = "\t</filelist>\n";
+	$xml = "\t</filelist>\n";
 	return $xml;
 }
 

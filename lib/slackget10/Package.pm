@@ -54,20 +54,6 @@ sub new
 
 =head1 FUNCTIONS
 
-=head2 setValue
-
-Set the value of a named key to the value passed in argument.
-
-	$package->setValue($key,$value);
-
-=cut
-
-sub setValue {
-	my ($self,$key,$value) = @_ ;
-# 	print "Setting $key=$value for $self\n";
-	$self->{PACK}->{$key} = $value ;
-}
-
 =head2 merge
 
 This method merge $another_package with $package. WARNING: $another_package will be destroy in the operation (this is a collateral damage ;-), for some dark preocupation of memory.
@@ -85,53 +71,6 @@ sub merge {
 	}
 	$package = undef;
 }
-
-=head2 getValue
-
-Return the value of a key :
-
-	$string = $package->getValue($key);
-
-=cut
-
-sub getValue {
-	my ($self,$key) = @_ ;
-	return $self->{PACK}->{$key};
-}
-
-=head2 _setId [PRIVATE]
-
-set the package ID (normally the package complete name, like aaa_base-10.0.0-noarch-1). In normal use you don't need to use this method
-
-	$package->_setId('aaa_base-10.0.0-noarch-1');
-
-=cut
-
-sub _setId{
-	my ($self,$id)=@_;
-	$self->{ROOT} = $id;
-}
-
-=head2 get_id
-
-return the package id (full name, like aaa_base-10.0.0-noarch-1).
-
-	$string = $package->get_id();
-
-=cut
-
-sub get_id {
-	my $self= shift;
-	return $self->{ROOT};
-}
-
-=head2 fill_object_from_package_name
-
-Try to extract the maximum informations from the name of the package. The constructor automatically call this method.
-
-	$package->fill_object_from_package_name();
-
-=cut
 
 sub fill_object_from_package_name{
 	my $self = shift;
@@ -197,9 +136,9 @@ sub extract_informations {
 		{
 			$self->setValue('required',$1);
 		}
-		if($_ =~ /PACKAGE SUGGESTS:\s+(.*)\s*\n/)
+		if($_ =~ /PACKAGE SUGGESTS:\s+([^\n]*)\s*\n{0,1}/)
 		{
-			$self->setValue('suggest',$1);
+			$self->setValue('suggest',$1) if($1 ne 'PACKAGE DESCRIPTION:');
 		}
 		if($_=~/PACKAGE DESCRIPTION:\s*\n(.*)/ms)
 		{
@@ -209,6 +148,95 @@ sub extract_informations {
 			$self->clean_description ;
 		}
 	}
+}
+
+=head2 clean_description
+
+remove the "<package_name>: " string in front of each line of the description. Change < to &lt; and > to &gt;. Finally remove extra tabulation (for identation).
+
+	$package->clean_description();
+
+=cut
+
+sub clean_description{
+	my $self = shift;
+	if($self->{PACK}->{name})
+	{
+		$self->{PACK}->{description}=~ s/\Q$self->{PACK}->{name}:\E\s//ig;
+		$self->{PACK}->{description}=~ s/\t{4,}/\t\t\t/g;
+		$self->{PACK}->{description}=~ s/\n\s+\n/\n/g;
+		$self->{PACK}->{description}=~ s/</&lt;/g;
+		$self->{PACK}->{description}=~ s/>/&gt;/g;
+		$self->{PACK}->{description}=~ s/&/&amp;/g;
+	}
+	$self->{PACK}->{description}.="\n\t\t";
+	return 1;
+}
+
+=head2 grab_info_from_description
+
+Try to find some informations in the description. For example, packages from linuxpackages.net contain a line starting by Packager: ..., this method will extract this information and re-set the package-maintener tag.
+
+The supported tags are: package-maintener, info-destination-slackware, info-packager-mail, info-homepage, info-packager-tool, info-packager-tool-version
+
+	$package->grab_info_from_description();
+
+=cut
+
+sub grab_info_from_description{
+	my $self = shift;
+	if($self->{PACK}->{description}=~ /this\s+version\s+.*\s+was\s+comp(iled|lied)\s+for\s+([^\n]*)\s+(.|\n)*\s+by\s+([^\n\t]*)/i){
+		$self->setValue('info-destination-slackware',$2);
+		$self->setValue('package-maintener',$4);
+	}
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
+		$self->setValue('info-packager-mail',$2);
+		$self->setValue('package-maintener',$1);
+	}
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by\s+(.*)\s+\[([^\n\t]*)\]/i){
+		$self->setValue('info-homepage',$2);
+		$self->setValue('package-maintener',$1);
+	}
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+.*by\s+(.*)\s+\(([^\n\t]*)\)/i){
+		$self->setValue('package-maintener',$1);
+		$self->setValue('info-packager-mail',$2);
+	}
+	elsif($self->{PACK}->{description}=~ /Package\s+Maintainer:\s+(.*)\s+\(([^\n\t]*)\)/i){
+		$self->setValue('package-maintener',$1);
+		$self->setValue('info-packager-mail',$2);
+	}
+	elsif($self->{PACK}->{description}=~ /Packaged\s+by\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
+		$self->setValue('package-maintener',$1);
+		$self->setValue('info-packager-mail',$2);
+	}
+	elsif($self->{PACK}->{description}=~ /Packaged\s+by:?\s+(.*)(\s+(by|for|to|on))?/i){
+		$self->setValue('package-maintener',$1);
+	}
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:?\s+([^\n\t]*)/i){
+		$self->setValue('package-maintener',$1);
+	}
+	elsif($self->{PACK}->{description}=~ /Packager:\s+(.*)\s+&lt;(.*)&gt;/i){
+		$self->setValue('package-maintener',$1);
+		$self->setValue('info-packager-mail',$2);
+	}
+	elsif($self->{PACK}->{description}=~ /Packager:\s+([^\n\t]*)/i){
+		$self->setValue('package-maintener',$1);
+	}
+	elsif($self->{PACK}->{description}=~ /Packager\s+([^\n\t]*)/i){
+		$self->setValue('package-maintener',$1);
+	}
+	if($self->{PACK}->{description}=~ /Home\s{0,1}page: ([^\n\t]*)/i){
+		$self->setValue('info-homepage',$1);
+	}
+	elsif($self->{PACK}->{description}=~ /Package URL: ([^\n\t]*)/i){
+		$self->setValue('info-homepage',$1);
+	}
+	
+	if($self->{PACK}->{description}=~ /Package creat(ed|e) with ([^\s]*) ([^\s]*)/i){
+		$self->setValue('info-packager-tool',$2);
+		$self->setValue('info-packager-tool-version',$3);
+	}
+	
 }
 
 =head2 to_XML
@@ -223,10 +251,19 @@ sub to_XML
 {
 	my $self = shift;
 	my $xml = "\t<package id=\"$self->{ROOT}\">\n";
+	if(defined($self->{STATUS}) && ref($self->{STATUS}) eq 'slackget10::Status')
+	{
+		$xml .= "\t\t".$self->{STATUS}->to_XML()."\n";
+	}
 	if($self->{PACK}->{'package-date'}){
 		$xml .= "\t\t".$self->{PACK}->{'package-date'}->to_XML();
 		$self->{TMP}->{'package-date'}=$self->{PACK}->{'package-date'};
 		delete($self->{PACK}->{'package-date'});
+	}
+	if($self->{PACK}->{'date'}){
+		$xml .= "\t\t".$self->{PACK}->{'date'}->to_XML();
+		$self->{TMP}->{'date'}=$self->{PACK}->{'date'};
+		delete($self->{PACK}->{'date'});
 	}
 	foreach (keys(%{$self->{PACK}})){
 		$xml .= "\t\t<$_>$self->{PACK}->{$_}</$_>\n" if(defined($self->{PACK}->{$_}));
@@ -248,41 +285,7 @@ sub to_string{
 	$self->toXML();
 }
 
-=head2 description
-
-return the description of the package.
-
-	$string = $package->description();
-
-=cut
-
-sub description{
-	my $self = shift;
-	return $self->{PACK}->{description};
-}
-
-=head2 clean_description
-
-remove the "<package_name>: " string in front of each line of the description. Change < to &lt; and > to &gt;. Finally remove extra tabulation (for identation).
-
-	$package->clean_description();
-
-=cut
-
-sub clean_description{
-	my $self = shift;
-	if($self->{PACK}->{name})
-	{
-		$self->{PACK}->{description}=~ s/\Q$self->{PACK}->{name}:\E\s//ig;
-		$self->{PACK}->{description}=~ s/\t{4,}/\t\t\t/g;
-		$self->{PACK}->{description}=~ s/\n\s+\n//g;
-		$self->{PACK}->{description}=~ s/</&lt;/g;
-		$self->{PACK}->{description}=~ s/>/&gt;/g;
-		$self->{PACK}->{description}=~ s/&/&amp;/g;
-	}
-	$self->{PACK}->{description}.="\n\t\t";
-	return 1;
-}
+=head1 PRINTING METHODS
 
 =head2 print_restricted_info
 
@@ -352,70 +355,111 @@ sub fprint_full_info {
 	}
 }
 
-=head2 grab_info_from_description
+=head1 ACCESSORS
 
-Try to find some informations in the description. For example, packages from linuxpackages.net contain a line starting by Packager: ..., this method will extract this information and re-set the package-maintener tag.
+=head2 setValue
 
-The supported tags are: package-maintener, info-destination-slackware, info-packager-mail, info-homepage, info-packager-tool, info-packager-tool-version
+Set the value of a named key to the value passed in argument.
 
-	$package->grab_info_from_description();
+	$package->setValue($key,$value);
 
 =cut
 
-sub grab_info_from_description{
+sub setValue {
+	my ($self,$key,$value) = @_ ;
+# 	print "Setting $key=$value for $self\n";
+	$self->{PACK}->{$key} = $value ;
+}
+
+
+=head2 getValue
+
+Return the value of a key :
+
+	$string = $package->getValue($key);
+
+=cut
+
+sub getValue {
+	my ($self,$key) = @_ ;
+	return $self->{PACK}->{$key};
+}
+
+=head2 status
+
+Return the current status of the package object as a slackget10::Status object. This object is set by other class, and in most case you don't have to set it by yourself.
+
+	print "The current status for ",$package->name," is ",$package->status()->to_string,"\n";
+
+You also can set the status, by passing a slackget10::Status object, to this method.
+
+	$package->status($status_object);
+
+This method return 1 if all goes well and undef else.
+=cut
+
+sub status {
+	my ($self,$status) = @_ ;
+	if(defined($status))
+	{
+		return undef if(ref($status) ne 'slackget10::Status');
+		$self->{STATUS} = $status ;
+	}
+	else
+	{
+		return $self->{STATUS} ;
+	}
+	
+	return 1;
+}
+
+
+
+=head2 _setId [PRIVATE]
+
+set the package ID (normally the package complete name, like aaa_base-10.0.0-noarch-1). In normal use you don't need to use this method
+
+	$package->_setId('aaa_base-10.0.0-noarch-1');
+
+=cut
+
+sub _setId{
+	my ($self,$id)=@_;
+	$self->{ROOT} = $id;
+}
+
+=head2 get_id
+
+return the package id (full name, like aaa_base-10.0.0-noarch-1).
+
+	$string = $package->get_id();
+
+=cut
+
+sub get_id {
+	my $self= shift;
+	return $self->{ROOT};
+}
+
+=head2 fill_object_from_package_name
+
+Try to extract the maximum informations from the name of the package. The constructor automatically call this method.
+
+	$package->fill_object_from_package_name();
+
+=cut
+
+=head2 description
+
+return the description of the package.
+
+	$string = $package->description();
+
+=cut
+
+sub description{
 	my $self = shift;
-	if($self->{PACK}->{description}=~ /this\s+version\s+.*\s+was\s+comp(iled|lied)\s+for\s+([^\n]*)\s+(.|\n)*\s+by\s+(.*)/i){
-		$self->setValue('info-destination-slackware',$2);
-		$self->setValue('package-maintener',$4);
-	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:\s+(.*)\s+&lt;(.*)&gt;/i){
-		$self->setValue('info-packager-mail',$2);
-		$self->setValue('package-maintener',$1);
-	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by\s+(.*)\s+\[(.*)\]/i){
-		$self->setValue('info-homepage',$2);
-		$self->setValue('package-maintener',$1);
-	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+.*by\s+(.*)\s+\((.*)\)/i){
-		$self->setValue('package-maintener',$1);
-		$self->setValue('info-packager-mail',$2);
-	}
-	elsif($self->{PACK}->{description}=~ /Package\s+Maintainer:\s+(.*)\s+\((.*)\)/i){
-		$self->setValue('package-maintener',$1);
-		$self->setValue('info-packager-mail',$2);
-	}
-	elsif($self->{PACK}->{description}=~ /Packaged\s+by\s+(.*)\s+&lt;(.*)&gt;/i){
-		$self->setValue('package-maintener',$1);
-		$self->setValue('info-packager-mail',$2);
-	}
-	elsif($self->{PACK}->{description}=~ /Packaged\s+by:?\s+(.*)(\s+(by|for|to|on))?/i){
-		$self->setValue('package-maintener',$1);
-	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:?\s+(.*)/i){
-		$self->setValue('package-maintener',$1);
-	}
-	elsif($self->{PACK}->{description}=~ /Packager:\s+(.*)\s+&lt;(.*)&gt;/i){
-		$self->setValue('package-maintener',$1);
-		$self->setValue('info-packager-mail',$2);
-	}
-	elsif($self->{PACK}->{description}=~ /Packager:\s+(.*)/i){
-		$self->setValue('package-maintener',$1);
-	}
-	elsif($self->{PACK}->{description}=~ /Packager\s+(.*)/i){
-		$self->setValue('package-maintener',$1);
-	}
-	if($self->{PACK}->{description}=~ /Homepage: (.*)/i){
-		$self->setValue('info-homepage',$1);
-	}
-	elsif($self->{PACK}->{description}=~ /Package URL: (.*)/i){
-		$self->setValue('info-homepage',$1);
-	}
-	
-	if($self->{PACK}->{description}=~ /Package creat(ed|e) with ([^\s]*) ([^\s]*)/i){
-		$self->setValue('info-packager-tool',$2);
-		$self->setValue('info-packager-tool-version',$3);
-	}
-	
+	return $self->{PACK}->{description};
 }
 
 =head2 filelist
@@ -481,7 +525,15 @@ return the location of the installed package.
 
 sub location{
 	my $self = shift;
-	return $self->{PACK}->{location};
+	if(exists($self->{PACK}->{'package-location'}) && defined($self->{PACK}->{'package-location'}))
+	{
+		return $self->{PACK}->{'package-location'};
+	}
+	else
+	{
+		return $self->{PACK}->{location};
+	}
+	
 }
 
 =head2 conflicts
