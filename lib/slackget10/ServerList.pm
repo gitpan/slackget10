@@ -20,7 +20,7 @@ our @ISA = qw( slackget10::List );
 
 =head1 SYNOPSIS
 
-This class is used by slack-get to represent a server store in the servers.xml file.
+This class is used by slack-get to represent a list of servers store in the servers.xml file.
 
     use slackget10::ServerList;
 
@@ -43,6 +43,9 @@ sub new
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
+Please read the L<slackget10::List> doscumentation for more information on the list constructor.
 
 =head1 FUNCTIONS
 

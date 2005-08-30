@@ -29,6 +29,8 @@ This class is a container of slackget10::Package object, and allow you to perfor
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
 This class constructor take the followings arguments : 
 
 * list_type. You must provide a string which will specialize your list. Ex:
@@ -88,7 +90,7 @@ sub add {
 
 =head2 get
 
-return the $index slackget10::Package object in the list
+return the $index -nth object in the list
 
 	$list->get($index);
 
@@ -114,15 +116,26 @@ sub get_all {
 
 =head2 Shift
 
-Same as the Perl shift. Shifts of and return the first slackget10::Package of the slackget10::List;
+Same as the Perl shift. Shifts of and return the first object of the slackget10::List;
 
 	$element = $list->Shift();
+
+If an index is passed shift and return the given index.
 
 =cut
 
 sub Shift {
-	my ($self) = @_ ;
-	return shift(@{$self->{LIST}});
+	my ($self,$elem) = @_ ;
+	unless(defined($elem))
+	{
+		return shift(@{$self->{LIST}});
+	}
+	else
+	{
+		my $e = $self->get($elem);
+		$self->{LIST} = [@{$self->{LIST}}[0..($elem-1)], @{$self->{LIST}}[($elem+1)..$#{$self->{LIST}}]] ;
+		return $e;
+	}
 }
 
 =head2 to_XML
@@ -145,6 +158,25 @@ sub to_XML
 	return $xml;
 }
 
+=head2 to_HTML
+
+return an HTML encoded string.
+
+	$xml = $list->to_HTML();
+
+=cut
+
+sub to_HTML
+{
+	my $self = shift;
+	my $xml = '<ul>';
+	foreach (@{$self->{LIST}}){
+		$xml .= $_->to_HTML();
+	}
+	$xml .= '</ul>';
+	return $xml;
+}
+
 =head2 to_string
 
 Alias for to_XML()
@@ -158,7 +190,7 @@ sub to_string{
 
 =head2 Length
 
-Return the length of the current list.
+Return the length (the number of element) of the current list. If you are interest by the size in memory you have to multiply by yourself the number returned by this method by the size of a signle object.
 
 	$list->Length ;
 
@@ -168,6 +200,22 @@ sub Length
 {
 	my $self = shift;
 	return scalar(@{$self->{LIST}});
+}
+
+=head2 empty
+
+Empty the list
+
+	$list->empty ;
+
+=cut
+
+sub empty
+{
+	my $self = shift ;
+	$self->{LIST} = undef ;
+	delete($self->{LIST});
+	$self->{LIST} = [] ;
 }
 
 

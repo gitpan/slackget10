@@ -55,6 +55,9 @@ sub new
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
+This class is not designed to be instanciate alone or used alone. You have to use the slackget10::Network::Connection.
 
 =head1 FUNCTIONS
 

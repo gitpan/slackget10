@@ -42,6 +42,8 @@ Classes from ths namespace represent an abstraction of the special file they can
 
 =head1 CONSTUSTOR
 
+=head2 new
+
 Take a file, a slackget10::Config object and an id name :
 
 	my $pack = slackget10::SpecialFiles::PACKAGES->new('PACKAGES.TXT',$config,'slackware');
@@ -68,6 +70,10 @@ sub new
 =head1 FUNCTIONS
 
 =head2 compile
+
+Take no argument, and compile the informations contains in the PACKAGES.TXT file into the internal data structure of slack-get.
+
+	$pack->compile ;
 
 =cut
 
@@ -147,6 +153,7 @@ sub get_meta {
 
 =head2 get_result
 
+Not yet implemented.
 
 =cut
 

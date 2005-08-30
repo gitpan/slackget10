@@ -17,7 +17,7 @@ our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 
-This class 
+This class is used by slack-get daemon's to verify the permission of an host.
 
     use slackget10::Network::Auth;
 
@@ -42,6 +42,8 @@ sub new
 }
 
 =head1 CONSTRUCTOR
+
+=head2 new
 
 The constructor just take one argument: a slackget10::Config object :
 

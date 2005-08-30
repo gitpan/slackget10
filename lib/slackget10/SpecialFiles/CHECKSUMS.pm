@@ -44,6 +44,8 @@ Classes from ths namespace represent an abstraction of the special file they can
 
 =head1 CONSTUSTOR
 
+=head2 new
+
 The constructor take three argument : the file CHECKSUMS.md5 with his all path, a slackget10::Config object and an id name.
 
 	my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('/home/packages/CHECKSUMS.md5',$config,'slackware');

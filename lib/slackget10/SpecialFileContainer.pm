@@ -27,7 +27,11 @@ This class is a front-end for the 3 sub-class slackget10::SpecialFiles::PACKAGES
 
 Act as a container but also make a treatment (the compilation of the 3 subclasses in one sol object)
 
-Parameters are :
+=head1 CONSTRUCTOR
+
+=head2 new
+
+take the following arguments :
 
 	a unique id
 	FILELIST => the FILELIST.TXT filename
@@ -44,8 +48,6 @@ Parameters are :
 	PACKAGES => /home/packages/update_files/PACKAGES.TXT,
 	CHECKSUMS => /home/packages/update_files/CHECKSUMS.md5
     );
-
-=head1 CONSTRUCTOR
 
 =cut
 

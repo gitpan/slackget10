@@ -28,7 +28,9 @@ This class is used by slack-get to represent a server store in the servers.xml f
 
 This class' usage is mostly the same that the slackget10::Package one. There is one big difference with the package class : you must use the accessors for setting the fast and slow servers list.
 
-=CONSTRUCTOR
+=head1 CONSTRUCTOR
+
+=head2 new
 
 The constructor require the following argument :
 
@@ -71,9 +73,6 @@ sub new
 	
 	return $self;
 }
-
-=head1 CONSTRUCTOR
-
 
 =head1 FUNCTIONS
 
@@ -434,6 +433,21 @@ sub to_XML
 # 	}
 	$xml .= "\t</server>\n";
 	return $xml;
+}
+
+=head2 to_HTML
+
+return the server info as an HTML encoded string.
+
+	$xml = $server->to_HTML();
+
+=cut
+
+sub to_HTML
+{
+	my $self = shift;
+	return undef unless(defined($self->{ID}));
+	return "<li>current host for <a href='".$self->url."' target='_blank' title='".$self->description."'>$self->{ID}</a> is ".$self->host."</li><br/>\n";
 }
 
 =head1 AUTHOR

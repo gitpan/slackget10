@@ -47,7 +47,21 @@ sub new
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
+Take no arguments.
+
+	my $base = slackget10::Base->new();
+
 =head1 FUNCTIONS
+
+=cut
+
+=head2 ls
+
+take a directory sa argument and return an array wich contain all things in this directory.
+
+	my @config_files = $base->ls('/etc/slack-get/') ;
 
 =cut
 
@@ -71,15 +85,23 @@ sub ls
 	}
 	return @files;
 }
+
+=head2 dir2files
+
+take at leat one directory in argument and recursively follow all subdirectories. Return an array containing all files encounter but WITHOUT symblic links.
+
+	my @config_files = $base->dir2files('/etc','/usr/local/etc', "/$ENV{HOME}/etc/") ;
+
+=cut
+
 sub dir2files
 {
 	my $self = shift;
-	my @files = @_ ;
 	my @f_files = ();
 	
-	foreach my $a (@files)
+	foreach my $a (@_)
 	{
-		unless(-d $a)
+		unless(-d $a && -l $a)
 		{
 			push @f_files,$a;
 		}
@@ -87,8 +109,7 @@ sub dir2files
 		{
 			unless(-l $a)
 			{
-				my @temp = $self->ls($a) ;
-				@f_files = (@f_files,$self->dir2files(@temp));
+				@f_files = (@f_files,$self->dir2files($self->ls($a)));
 			}
 		}
 	}
@@ -232,7 +253,7 @@ sub load_packages_list_from_xml_file {
 	foreach my $group (keys(%{$xml_in})){
 		my $package_list = new slackget10::PackageList ;
 		foreach my $pack_name (keys(%{$xml_in->{$group}->{'package'}})){
-			#TODO: finir..quoi j'en sais rien...Par contre je sais pas si c'est une bonne idée de séparer les PackageList.
+			#TODO: finir..quoi j'en sais rien...Par contre je sais pas si c'est une bonne idÃ©e de sÃ©parer les PackageList.
 			my $package = new slackget10::Package ($pack_name);
 			foreach my $key (keys(%{$xml_in->{$group}->{'package'}->{$pack_name}})){
 				if($key eq 'date')
@@ -279,7 +300,7 @@ sub load_server_list_from_xml_file {
 
 By default the file list is not include in the installed.xml for some size consideration (on my system including the file list into installed.xml make him grow 28 times ! It passed from 400 KB to 11 MB),
 
-So you can use this method to include the file list into installed.xml. BE carefull, to ue it BEFORE compil_packages_directory() !
+So you can use this method to include the file list into installed.xml. BE carefull, to use it BEFORE compil_packages_directory() !
 
 	$base->set_include_file_list();
 	$packagelist = $base->compil_packages_directory();
@@ -291,6 +312,30 @@ sub set_include_file_list{
 	$self->{'include-file-list'} = 1;
 }
 
+=head2 ldd
+
+Like the UNIX command ldd. Do a ldd system call on a list of files and return an array of dependencies.
+
+	my @dependecies = $base->ldd('/usr/bin/gcc', '/usr/bin/perl', '/bin/awk') ;
+
+=cut
+
+sub ldd
+{
+	my $self = shift ;
+	my @dep = ();
+	foreach (@_)
+	{
+		foreach my $l (`ldd $_`)
+		{
+			if($l=~ /^\s*([^\s]*)\s*=>.*/) # linux-gate.so.1 =>  (0xffffe000) : we only want linux-gate.so.1
+			{
+				push @dep,$1 ;
+			}
+		}
+	}
+	return @dep;
+}
 
 =head1 AUTHOR
 

@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-slackget10::Network::Daemon - A wrapper for network operation in slack-getd
+slackget10::Network::Daemon - A class specific for daemon's instance.
 
 =head1 VERSION
 
@@ -17,7 +17,7 @@ our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 
-This class is anoter wrapper for slack-getd. It will encapsulate all daemon nework operation.
+This class is specific for daemon's instance of slack-get... But since there is no difference between daemons and tools this class is useless. I think I will remove it in the next release.
 
     use slackget10::Network::Daemon;
 
@@ -37,6 +37,7 @@ sub new
 
 =head1 CONSTRUCTOR
 
+=head2 new
 
 =head1 FUNCTIONS
 

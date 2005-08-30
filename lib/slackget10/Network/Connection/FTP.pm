@@ -10,7 +10,7 @@ require slackget10::File ;
 
 =head1 NAME
 
-slackget10::Network::Connection::FTP - This class encapsulate LWP::Simple
+slackget10::Network::Connection::FTP - This class encapsulate Net::FTP
 
 =head1 VERSION
 
@@ -52,6 +52,9 @@ sub new
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
+This class is not designed to be instanciate alone or used alone. You have to use the slackget10::Network::Connection.
 
 =head1 FUNCTIONS
 

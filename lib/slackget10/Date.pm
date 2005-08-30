@@ -31,7 +31,9 @@ This class is an abstraction of a date. It centralyze all operation you can do o
 
 =head1 CONSTRUCTOR
 
-The constructor new() take the followings arguments :
+=head2 new
+
+The constructor take the followings arguments :
 
 	day-name => the day name in : Mon, Tue, Wed, Thu, Fri, Sat, Sun
 	day-number => the day number from 1 to 31. WARNINGS : there is no verification about the date validity !
@@ -224,6 +226,26 @@ sub to_XML
 	$xml .= "/>\n";
 	return $xml;
 }
+
+=head2 to_HTML
+
+return the date as an HTML encoded string.
+
+	$xml = $date->to_HTML();
+
+=cut
+
+sub to_HTML
+{
+	my $self = shift;
+	my $xml = "<strong>Date :</strong> $self->{DATE}->{'day-number'}/$self->{DATE}->{'month-number'}/$self->{DATE}->{'year'} $self->{DATE}->{'hour'}<br/>\n";
+# 	foreach (keys(%{$self->{DATE}})){
+# 		$xml .= "<strong>$_ :</strong> $self->{DATE}->{$_}<br/>" if(defined($self->{DATE}->{$_}));
+# 	}
+# 	$xml .= "</p>\n";
+	return $xml;
+}
+
 =head1 ACCESSORS
 
 =cut

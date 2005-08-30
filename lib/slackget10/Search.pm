@@ -30,6 +30,16 @@ All methods return an array of slackget10::Package objects.
 
 =cut
 
+=head1 CONSTRUCTOR
+
+=head2 new
+
+The constructor take a slackget10::PackageList object as argument.
+
+	my $search = slackget10::Search->new($packagelist);
+
+=cut
+
 sub new
 {
 	my ($class,$packagelist) = @_ ;
@@ -57,6 +67,29 @@ sub search_package {
 		if($_->get_id() =~ /$string/i or $_->name() =~ /$string/i){
 			push @result, $_;
 		}
+	}
+	return (@result);
+}
+
+=head2 exact_search
+
+This method take a string as parameter search for packages where the id is equal to this string. Return the index of the packages in the list.
+
+	$idx = $packageslist->exact_search('perl-mime-base64-3.05-noarch-1');
+
+=cut
+
+sub exact_search
+{
+	my ($self,$string) = @_ ;
+	my @result;
+	my $k=0;
+	foreach (@{$self->{PKGLIST}->get_all()}){
+		next unless(defined($_));
+		if($_->get_id() =~ /$string/i or $_->name() =~ /$string/i){
+			push @result, $k;
+		}
+		$k++;
 	}
 	return (@result);
 }
@@ -94,7 +127,15 @@ sub search_package_multi_fields {
 	foreach (@{$self->{PKGLIST}->get_all()}){
 		foreach my $field (@fields)
 		{
-			if($_->get_id() =~ /$string/i or (defined($_->getValue($field))&& $_->getValue($field)=~ /$string/i)){
+			if($field=~ /^([^=]+)=(.+)/)
+			{
+				if(defined($_->getValue($1)) && $_->getValue($1) ne $2)
+				{
+					print "[search] '$1' => '",$_->getValue($1),"' ne '$2'\n";
+					last ;
+				}
+			}
+			if($_->get_id() =~ /$string/i or (defined($_->getValue($field)) && $_->getValue($field)=~ /$string/i)){
 				push @result, $_;
 				last;
 			}

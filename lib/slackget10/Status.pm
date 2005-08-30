@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-slackget10::Status - A wrapper for network operation in slack-get
+slackget10::Status - A class for returning a status code with its explanations
 
 =head1 VERSION
 
@@ -49,6 +49,8 @@ sub new
 }
 
 =head1 CONSTRUCTOR
+
+=head2 new
 
 You need to pass to the constructor a parameter 'codes' wich contain a hashref with number return code as keys and explanation strings as values :
 
@@ -109,6 +111,18 @@ sub to_XML
 {
 	my $self = shift ;
 	return "<status code=\"".$self->to_int()."\" description=\"".$self->to_string()."\" />";
+}
+
+=head2 to_HTML
+
+return the status as an HTML encoded string
+
+=cut
+
+sub to_HTML
+{
+	my $self = shift ;
+	return "<p id=\"status\"><h3>Status</h3><strong>code :</strong> ".$self->to_int()."<br/><strong>description :</strong> ".$self->to_string()."<br/>\n</p>\n";
 }
 
 =head2 current

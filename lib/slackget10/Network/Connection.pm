@@ -43,6 +43,8 @@ This class is a wrapper for subclass like slackget10::Network::Connection::HTTP 
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
 	use slackget10::Network::Connection;
 	
 	(1)
@@ -207,6 +209,14 @@ sub parse_url {
 	}
 }
 
+=head2 strip_slash
+
+Remove extra slash (/) in the URL and return the URL.
+
+	my $url = $connection->strip_slash('http://ftp.infinityperl.org//slackware-repository////CHECKSUMS.md5') ;
+
+=cut
+
 sub strip_slash
 {
 	my ($self,$url) = @_;
@@ -247,6 +257,10 @@ sub _fill_data_section {
 		$self->{DATA}->{$_} = $args->{$_} if(!(defined($self->{DATA}->{$_})));
 	}
 }
+
+=head2 DEBUG_show_data_section
+
+=cut
 
 sub DEBUG_show_data_section
 {

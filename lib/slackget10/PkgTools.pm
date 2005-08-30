@@ -47,6 +47,9 @@ sub new
 		3 => "Can't install package : new package not found in the cache.\n",
 		4 => "Can't remove package : no such package installed.\n",
 		5 => "Can't upgrade package : new package not found in the cache.\n",
+		6 => "Can't install package : an error occured during $self->{CONF}->{common}->{pkgtools}->{'installpkg-binary'} system call\n",
+		7 => "Can't remove package : an error occured during $self->{CONF}->{common}->{pkgtools}->{'removepkg-binary'} system call\n",
+		8 => "Can't upgrade package : an error occured during $self->{CONF}->{common}->{pkgtools}->{'upgradepkg-binary'} system call\n",
 		10 => "An error occured in the slackget10::PkgTool class (during installpkg, upgradepkg or removepkg) but the class is unable to understand the error.\n"
 	};
 	bless($self,$class);
@@ -56,31 +59,45 @@ sub new
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
 Take a slackget10::Config object as argument :
 
 	my $pkgtool = new slackget10::PkgTool ($config);
 
 =head1 FUNCTIONS
 
+slackget10::PkgTools methods used the followings status :
+
+		0 : Package have been installed successfully.
+		1 : Package have been upgraded successfully.
+		2 : Package have been removed successfully.
+		3 : Can't install package : new package not found in the cache.
+		4 : Can't remove package : no such package installed.
+		5 : Can't upgrade package : new package not found in the cache.
+		6 : Can't install package : an error occured during <installpkg-binary /> system call
+		7 : Can't remove package : an error occured during <removepkg-binary /> system call
+		8 : Can't upgrade package : an error occured during <upgradepkg-binary /> system call
+		10 : An error occured in the slackget10::PkgTool class (during installpkg, upgradepkg or removepkg) but the class is unable to understand the error.
+
 =head2 install
 
 Take a single slackget10::Package object or a single slackget10::PackageList as argument and call installpkg on all this packages.
-Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package installed, set a status.
+Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package, set a status.
 
 	$pkgtool->install($package_list);
 
 =cut
 
 sub install {
-	
+	 
 	sub _install_package
 	{
-		my ($self,$pkg) = shift;
+		my ($self,$pkg) = @_;
 		my $status = new slackget10::Status (codes => $self->{STATUS});
 		#$self->{CONF}->{common}->{'update-directory'}/".$server->shortname."/cache/
 		if( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
 		{
-			print "\tTrying to install package: $self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz\n";
 			if(system("$self->{CONF}->{common}->{pkgtools}->{'installpkg-binary'} $self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")==0)
 			{
 				$status->current(0);
@@ -88,9 +105,10 @@ sub install {
 			}
 			else
 			{
-				$status->current(10);
+				$status->current(6);
 				return $status ;
 			}
+			
 		}
 		else
 		{
@@ -102,10 +120,14 @@ sub install {
 	if(ref($object) eq 'slackget10::PackageList')
 	{
 		print "Do the job for a slackget10::PackageList\n";
+		foreach my $pack ($object->get_all())
+		{
+			$pack->status($self->_install_package($pack));
+		}
 	}
 	elsif(ref($object) eq 'slackget10::Package')
 	{
-		print "Do the job for a slackget10::Package\n";
+		print "[install] Do the job for a slackget10::Package '$object'\n";
 		$object->status($self->_install_package($object));
 	}
 	else
@@ -117,7 +139,7 @@ sub install {
 =head2 upgrade
 
 Take a single slackget10::Package object or a single slackget10::PackageList as argument and call upgradepkg on all this packages.
-Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package installed, set a status.
+Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package, set a status.
 
 	$pkgtool->install($package_list) ;
 
@@ -127,7 +149,7 @@ sub upgrade {
 	
 	sub _upgrade_package
 	{
-		my ($self,$pkg) = shift;
+		my ($self,$pkg) = @_;
 		my $status = new slackget10::Status (codes => $self->{STATUS});
 		#$self->{CONF}->{common}->{'update-directory'}/".$server->shortname."/cache/
 		if( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
@@ -140,7 +162,7 @@ sub upgrade {
 			}
 			else
 			{
-				$status->current(10);
+				$status->current(8);
 				return $status ;
 			}
 		}
@@ -169,7 +191,7 @@ sub upgrade {
 =head2 remove
 
 Take a single slackget10::Package object or a single slackget10::PackageList as argument and call installpkg on all this packages.
-Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package installed, set a status. 
+Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package, set a status. 
 
 	$pkgtool->install($package_list);
 
@@ -179,7 +201,7 @@ sub remove {
 	
 	sub _remove_package
 	{
-		my ($self,$pkg) = shift;
+		my ($self,$pkg) = @_;
 		my $status = new slackget10::Status (codes => $self->{STATUS});
 		#$self->{CONF}->{common}->{'update-directory'}/".$server->shortname."/cache/
 		if( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
@@ -192,7 +214,7 @@ sub remove {
 			}
 			else
 			{
-				$status->current(10);
+				$status->current(7);
 				return $status ;
 			}
 		}

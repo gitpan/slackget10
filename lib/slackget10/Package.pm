@@ -27,6 +27,8 @@ This module is used to represent a package for slack-get
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
 The constructor take two parameters : a package name, and an id (the namespace of the package like 'slackware' or 'linuxpackages')
 
 	my $package = new slackget10::Package ('aaa_base-10.0.0-noarch-1','slackware');
@@ -71,6 +73,14 @@ sub merge {
 	}
 	$package = undef;
 }
+
+=head2 fill_object_from_package_name
+
+Try to extract the maximum informations from the name of the package. The constructor automatically call this method.
+
+	$package->fill_object_from_package_name();
+
+=cut
 
 sub fill_object_from_package_name{
 	my $self = shift;
@@ -132,11 +142,11 @@ sub extract_informations {
 # 			print "location ";
 			$self->setValue('location',$1);
 		}
-		if($_ =~ /PACKAGE REQUIRED:\s+(.*)\s*\n/)
+		if($_ =~ /PACKAGE REQUIRED:\s+(.*)\s*\n*/)
 		{
 			$self->setValue('required',$1);
 		}
-		if($_ =~ /PACKAGE SUGGESTS:\s+([^\n]*)\s*\n{0,1}/)
+		if($_ =~ /PACKAGE SUGGESTS:\s+([^\n]*)\s*\n*/)
 		{
 			$self->setValue('suggest',$1) if($1 ne 'PACKAGE DESCRIPTION:');
 		}
@@ -283,6 +293,50 @@ Alias for to_XML()
 sub to_string{
 	my $self = shift;
 	$self->toXML();
+}
+
+=head2 to_HTML
+
+return the package as an HTML string
+
+	my $html = $package->to_HTML ;
+
+Note: I have design this method for 2 reasons. First for an easy integration of the search result in a GUI, second for my website search engine. So this HTML may not satisfy you. In this case just generate new HTML from accessors ;-)
+
+=cut
+
+sub to_HTML
+{
+	my $self = shift;
+	my $html = "\t<h3>$self->{ROOT}</h3>\n<p>";
+	if(defined($self->{STATUS}) && ref($self->{STATUS}) eq 'slackget10::Status')
+	{
+		$html .= "\t\t".$self->{STATUS}->to_HTML()."\n";
+	}
+	if($self->{PACK}->{'package-date'}){
+		$html .= "\t\t".$self->{PACK}->{'package-date'}->to_HTML();
+		$self->{TMP}->{'package-date'}=$self->{PACK}->{'package-date'};
+		delete($self->{PACK}->{'package-date'});
+	}
+	if($self->{PACK}->{'date'}){
+		$html .= "\t\t".$self->{PACK}->{'date'}->to_HTML();
+		$self->{TMP}->{'date'}=$self->{PACK}->{'date'};
+		delete($self->{PACK}->{'date'});
+	}
+	foreach (keys(%{$self->{PACK}})){
+		if($_ eq 'package-source')
+		{
+			$html .= "<strong>$_ :</strong> <b style=\"color:white;background-color:#6495ed\">$self->{PACK}->{$_}</b><br/>\n" if(defined($self->{PACK}->{$_}));
+		}
+		else
+		{
+			$html .= "<strong>$_ :</strong> $self->{PACK}->{$_}<br/>\n" if(defined($self->{PACK}->{$_}));
+		}
+	}
+	$self->{PACK}->{'package-date'}=$self->{TMP}->{'package-date'};
+	delete($self->{TMP});
+	$html .="\n</p>";
+	return $html;
 }
 
 =head1 PRINTING METHODS
@@ -440,14 +494,6 @@ sub get_id {
 	my $self= shift;
 	return $self->{ROOT};
 }
-
-=head2 fill_object_from_package_name
-
-Try to extract the maximum informations from the name of the package. The constructor automatically call this method.
-
-	$package->fill_object_from_package_name();
-
-=cut
 
 =head2 description
 

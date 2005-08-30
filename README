@@ -8,7 +8,11 @@ WARNING: the make test fail, because I don't provide a test suite for the moment
 
 INSTALLATION
 
-To install this module, run the following commands:
+Best :
+
+cpan slackget10
+
+To install this module by hand, run the following commands:
 
     perl Build.PL
     ./Build

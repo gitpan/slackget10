@@ -56,6 +56,8 @@ sub new
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
 Take a filename as argument.
 
 	my $file = slackget10::File->new('foo.txt'); # if foo.txt exist the constructor will call the Read() method
@@ -144,6 +146,16 @@ sub Lock_file
 Unlock a locked file. Only the locker object can unlock a file ! Return 1 if all goes well, else return undef. Return 2 if the file was not locked. Return 0 (false in scalar context) if the file was locked but by another slackget10::File object.
 
 	my $status = $file->Unlock_file ;
+
+Returned value are :
+
+	0 : error -> the file was locked by another instance of this class
+	
+	1 : ok lock removed
+	
+	2 : the file was not locked
+	
+	undef : unable to remove the lock.
 
 =cut
 

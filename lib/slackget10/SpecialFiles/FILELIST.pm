@@ -45,6 +45,8 @@ Classes from ths namespace represent an abstraction of the special file they can
 
 =head1 CONSTUSTOR
 
+=head2 new
+
 Take a file, a slackget10::Config object and an id name :
 
 	my $spec_chk = slackget10::SpecialFiles::CHECKSUMS->new('/home/packages/FILELIST.TXT',$config,'slackware');

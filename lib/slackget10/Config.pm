@@ -36,6 +36,16 @@ This module need XML::Simple to work.
 
 =cut
 
+=head1 CONSTRUCTOR
+
+=head2 new
+
+The constructor take the config file name as argument.
+
+	my $config = slackget10::Config->new('/etc/slack-get/config.xml') or die "cannot load config.xml\n";
+
+=cut
+
 sub new
 {
 	my ($class,$file) = @_ ;

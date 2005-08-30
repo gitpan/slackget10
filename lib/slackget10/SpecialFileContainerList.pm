@@ -29,6 +29,8 @@ This class is a container of slackget10::SpecialFileContainer object, and allow 
 
 =head1 CONSTRUCTOR
 
+=head2 new
+
 This class constructor don't take any parameters.
 
 	my $containerlist = new slackget10::SpecialFileContainerList ();
