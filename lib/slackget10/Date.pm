@@ -246,6 +246,20 @@ sub to_HTML
 	return $xml;
 }
 
+=head2 to_string
+
+return the date as a plain text string.
+
+	print "Date of the package is ", $package->date()->to_string,"\n";
+
+=cut
+
+sub to_string
+{
+	my $self = shift;
+	return "$self->{DATE}->{'day-number'}/$self->{DATE}->{'month-number'}/$self->{DATE}->{'year'} $self->{DATE}->{'hour'}";
+}
+
 =head1 ACCESSORS
 
 =cut

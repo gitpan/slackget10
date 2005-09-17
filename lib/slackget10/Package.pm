@@ -74,6 +74,76 @@ sub merge {
 	$package = undef;
 }
 
+=head2 compare_version
+
+This method take another slackget10::Package as argument and compare it's version to the current object.
+
+	if( $package->compare_version( $another_package ) == -1 )
+	{
+		print $another_package->get_id," is newer than ",$package->get_id ,"\n";
+	}
+
+Returned code :
+
+	-1 => $package version is lesser than $another_package's one
+	0 => $package version is equal to $another_package's one
+	1 => $package version is greater than $another_package's one
+	undef => an error occured.
+
+=cut
+
+sub compare_version
+{
+	my ($self,$o_pack) = @_ ;
+# 	warn "$o_pack is not a slackget10::Package !" if(ref($o_pack) ne 'slackget10::Package') ;
+	if($o_pack->can('version'))
+	{
+# 		print "compare_version ",$self->get_id()," v. ",$self->version()," and ",$o_pack->get_id()," v. ",$o_pack->version(),"\n";
+		$o_pack->setValue('version','0.0.0') unless(defined($o_pack->version()));
+		$self->setValue('version','0.0.0') unless(defined($self->version()));
+		my @o_pack_version = split(/\./, $o_pack->version()) ;
+		my @self_version = split(/\./, $self->version()) ;
+		for(my $k=0; $k<=$#self_version; $k++)
+		{
+# 			print "\t cmp $self_version[$k] and $o_pack_version[$k]\n";
+			$self_version[$k] = 0 unless(defined($self_version[$k]));
+			$o_pack_version[$k] = 0 unless(defined($o_pack_version[$k]));
+			if($self_version[$k] =~ /^\d+$/ && $o_pack_version[$k] =~ /^\d+$/)
+			{
+				if($self_version[$k] > $o_pack_version[$k])
+				{
+# 					print "\t",$self->get_id()," greater than ",$o_pack->get_id(),"\n";
+					return 1;
+				}
+				elsif($self_version[$k] < $o_pack_version[$k])
+				{
+# 					print "\t",$self->get_id()," lesser than ",$o_pack->get_id(),"\n";
+					return -1;
+				}
+			}
+			else
+			{
+				if($self_version[$k] gt $o_pack_version[$k])
+				{
+# 					print "\t",$self->get_id()," greater than ",$o_pack->get_id(),"\n";
+					return 1;
+				}
+				elsif($self_version[$k] lt $o_pack_version[$k])
+				{
+# 					print "\t",$self->get_id()," lesser than ",$o_pack->get_id(),"\n";
+					return -1;
+				}
+			}
+		}
+# 		print "\t",$self->get_id()," equal to ",$o_pack->get_id(),"\n";
+		return 0;
+	}
+	else
+	{
+		return undef;
+	}
+}
+
 =head2 fill_object_from_package_name
 
 Try to extract the maximum informations from the name of the package. The constructor automatically call this method.
@@ -98,7 +168,7 @@ sub fill_object_from_package_name{
 		$self->setValue('version',$2);
 		$self->setValue('architecture',$3);
 		$self->setValue('package-version',$4);
-		$self->setValue('package-maintener',$5);
+		$self->setValue('package-maintener',$5) if(!defined($self->getValue('package-maintener')));
 	}
 	else
 	{
@@ -140,15 +210,15 @@ sub extract_informations {
 		if($_ =~ /PACKAGE LOCATION:\s+(.*)\s*\n/)
 		{
 # 			print "location ";
-			$self->setValue('location',$1);
+			$self->setValue('package-location',$1);
 		}
 		if($_ =~ /PACKAGE REQUIRED:\s+(.*)\s*\n*/)
 		{
-			$self->setValue('required',$1);
+			$self->setValue('required',$1) if($1 !~ /^PACKAGE/);;
 		}
 		if($_ =~ /PACKAGE SUGGESTS:\s+([^\n]*)\s*\n*/)
 		{
-			$self->setValue('suggest',$1) if($1 ne 'PACKAGE DESCRIPTION:');
+			$self->setValue('suggest',$1) if($1 !~ /^PACKAGE/);
 		}
 		if($_=~/PACKAGE DESCRIPTION:\s*\n(.*)/ms)
 		{
@@ -170,7 +240,7 @@ remove the "<package_name>: " string in front of each line of the description. C
 
 sub clean_description{
 	my $self = shift;
-	if($self->{PACK}->{name})
+	if($self->{PACK}->{name} && $self->{PACK}->{description})
 	{
 		$self->{PACK}->{description}=~ s/\Q$self->{PACK}->{name}:\E\s//ig;
 		$self->{PACK}->{description}=~ s/\t{4,}/\t\t\t/g;
@@ -193,52 +263,69 @@ The supported tags are: package-maintener, info-destination-slackware, info-pack
 
 =cut
 
-sub grab_info_from_description{
+sub grab_info_from_description
+{
 	my $self = shift;
+	# NOTE: je remplace ici tout les elsif() par des if() histoire de voir si l'extraction d'information est plus interressante.
 	if($self->{PACK}->{description}=~ /this\s+version\s+.*\s+was\s+comp(iled|lied)\s+for\s+([^\n]*)\s+(.|\n)*\s+by\s+([^\n\t]*)/i){
 		$self->setValue('info-destination-slackware',$2);
 		$self->setValue('package-maintener',$4);
 	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
+	if($self->{PACK}->{description}=~ /\s*(http:\/\/[^\s]+)/i){
+		$self->setValue('info-homepage',$1);
+	}
+	if($self->{PACK}->{description}=~ /\s*([\w\.\-]+\@[^\s]+\.[\w]+)/i){
+		$self->setValue('info-packager-mail',$1);
+	}
+	if($self->{PACK}->{description}=~ /Package\s+created\s+by:\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
 		$self->setValue('info-packager-mail',$2);
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by\s+(.*)\s+\[([^\n\t]*)\]/i){
+	if($self->{PACK}->{description}=~ /Package\s+created\s+by\s+(.*)\s+\[([^\n\t]*)\]/i){
 		$self->setValue('info-homepage',$2);
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+.*by\s+(.*)\s+\(([^\n\t]*)\)/i){
+	if($self->{PACK}->{description}=~ /Package\s+created\s+.*by\s+(.*)\s+\(([^\n\t]*)\)/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Package\s+Maintainer:\s+(.*)\s+\(([^\n\t]*)\)/i){
+	if($self->{PACK}->{description}=~ /\s*Package\s+Maintainer:\s+(.*)\s+\(([^\n\t]*)\)/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Packaged\s+by\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
+	if($self->{PACK}->{description}=~ /Packaged\s+by\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Packaged\s+by:?\s+(.*)(\s+(by|for|to|on))?/i){
+	if ( $self->{PACK}->{description}=~ /Package created by ([^\s]+) ([^\s]+)/i)
+	{
+		$self->setValue('package-maintener',"$1 $2");
+	}
+	if ( $self->{PACK}->{description}=~ /Packaged by ([^\s]+) ([^\s]+) \((.*)\)/i)
+	{
+		$self->setValue('package-maintener',"$1 $2");
+		$self->setValue('info-packager-mail',$3);
+	}
+	if($self->{PACK}->{description}=~ /Packaged\s+by:?\s+(.*)(\s+(by|for|to|on))?/i){
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Package\s+created\s+by:?\s+([^\n\t]*)/i){
+	if($self->{PACK}->{description}=~ /Package\s+created\s+by:?\s+([^\n\t]*)/i){
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Packager:\s+(.*)\s+&lt;(.*)&gt;/i){
+	if($self->{PACK}->{description}=~ /Packager:\s+(.*)\s+&lt;(.*)&gt;/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	elsif($self->{PACK}->{description}=~ /Packager:\s+([^\n\t]*)/i){
+	if($self->{PACK}->{description}=~ /Packager:\s+([^\n\t]*)/i){
 		$self->setValue('package-maintener',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Packager\s+([^\n\t]*)/i){
+	if($self->{PACK}->{description}=~ /Packager\s+([^\n\t]*)/i){
 		$self->setValue('package-maintener',$1);
 	}
 	if($self->{PACK}->{description}=~ /Home\s{0,1}page: ([^\n\t]*)/i){
 		$self->setValue('info-homepage',$1);
 	}
-	elsif($self->{PACK}->{description}=~ /Package URL: ([^\n\t]*)/i){
+	if($self->{PACK}->{description}=~ /Package URL: ([^\n\t]*)/i){
 		$self->setValue('info-homepage',$1);
 	}
 	
@@ -645,6 +732,23 @@ return the package version.
 sub version {
 	my $self = shift;
 	return $self->{PACK}->{version};
+}
+
+=head2 get_fields_list
+
+return a list of all fields of the package. This method is suitable for example in GUI for displaying informations on packages.
+
+	foreach my $field ( $package->get_fields_list )
+	{
+		qt_textbrowser->append( "<b>$field</b> : ".$package->getValue( $field )."<br/>\n" ) ;
+	}
+
+=cut
+
+sub get_fields_list
+{
+	my $self = shift ;
+	return keys(%{$self->{PACK}}) ;
 }
 
 # 

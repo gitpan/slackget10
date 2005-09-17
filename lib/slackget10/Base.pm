@@ -59,7 +59,7 @@ Take no arguments.
 
 =head2 ls
 
-take a directory sa argument and return an array wich contain all things in this directory.
+take a directory as argument and return an array wich contain all things in this directory.
 
 	my @config_files = $base->ls('/etc/slack-get/') ;
 
@@ -101,16 +101,24 @@ sub dir2files
 	
 	foreach my $a (@_)
 	{
-		unless(-d $a && -l $a)
+# 		print "[dir2files] treating $a\n";
+		unless(-d $a or -l $a)
 		{
+# 			print "\t[dir2files] file $a is not a directory nor a symlink, pushing on files stack\n";
 			push @f_files,$a;
 		}
 		else
 		{
+# 			print "\t[dir2files] file $a is a directory or a symlink\n";
 			unless(-l $a)
 			{
+# 				print "\t[dir2files] file $a is a directory : recurse\n";
 				@f_files = (@f_files,$self->dir2files($self->ls($a)));
 			}
+# 			else
+# 			{
+# 				print "\t[dir2files] $a is a symlink\n";
+# 			}
 		}
 	}
 	return @f_files;
@@ -127,7 +135,10 @@ take a directory where are store installed packages files and return a slackget1
 sub compil_packages_directory
 {
 	my ($self,$dir) = @_;
+# 	print "[DEBUG] compiling directory \"$dir\"\n";
 	my @files = $self->dir2files($dir);
+# 	print "[DEBUG] number of entry in files array : ",scalar(@files),"\n";
+# 	print "[DEBUG] entry in \@files :\n",join "\n",@files,"\n";
 	my $ref;
 	my $packagelist = new slackget10::PackageList ;
 	foreach (@files)
@@ -137,7 +148,10 @@ sub compil_packages_directory
 		die $! unless $sg_file;
 		my @file = $sg_file->Get_file();
 		$_ =~ /^.*\/([^\/]*)$/;
+# 		print "[DEBUG] instanciate new package : \"$1\"\n";
 		$ref->{$1}= new slackget10::Package ($1);
+		next unless($ref->{$1}) ;
+# 		print "[DEBUG] package reference is $ref->{$1}\n";
 		my $pack = $ref->{$1};
 		for(my $k=0;$k<=$#file;$k++)
 		{

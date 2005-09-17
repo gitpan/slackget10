@@ -137,6 +137,7 @@ sub Lock_file
 {
 	my $self = shift;
 	return undef if $self->is_locked ;
+# 	print "\t[DEBUG] ( slackget10::File in Lock_file() ) locking file $self->{FILENAME} for $self\n";
 	Write({'file-encoding'=>$self->{'file-encoding'}},"$self->{FILENAME}.lock",$self) or return undef;
 	return 1;
 }
@@ -175,6 +176,7 @@ sub Unlock_file
 	}
 	else
 	{
+# 		print "\t[DEBUG] ( slackget10::File in Unlock_file() ) $self->{FILENAME} is not lock\n";
 		return 2;
 	}
 	return 1;
@@ -185,16 +187,19 @@ sub _verify_lock_maker
 	my $self = shift;
 	my $file = new slackget10::File ("$self->{FILENAME}.lock");
 	my $locker = $file->Get_line(0) ;
+# 	print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker of file $self->{FILENAME} is $locker and current object is $self\n";
 	$file->Close ;
 	undef($file);
 	my $object = ''.$self;
 # 	print "[debug file] compare object=$object and locker=$locker\n";
 	if($locker eq $object)
 	{
+# 		print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker access granted\n";
 		return 1;
 	}
 	else
 	{
+# 		print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker access ungranted\n";
 		return undef;
 	}
 }
@@ -220,13 +225,13 @@ Take a filename to write data and raw data
 
 	$file->Write($filename,@data);
 
-You also can cal this method without any parameter :
+You also can call this method without any parameter :
 
 	$file->Write ;
 
 In this case, the Write() method will wrote data in memory into the last opened file (with Read() or new()).
 
-The default encoding of this method is utf-8, pass an extra arument : file-encoding to the constructor to change that.
+The default encoding of this method is utf-8, pass an extra argument : file-encoding to the constructor to change that.
 =cut
 
 sub Write

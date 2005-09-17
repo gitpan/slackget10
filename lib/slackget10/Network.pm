@@ -57,12 +57,15 @@ sub new
 		on_success => \&on_success ,
 		on_error => \&on_error,
 		on_unknow => \&on_unknow,
-		on_choice => \&on_choice
+		on_choice => \&on_choice,
+		on_info => \&on_info
 	};
 	$self->{'on_error'} = $args{'on_error'} if($args{'on_error'} && ref($args{'on_error'}) eq 'CODE') ;
 	$self->{'on_success'} = $args{'on_success'} if($args{'on_success'} && ref($args{'on_success'}) eq 'CODE') ;
 	$self->{'on_choice'} = $args{'on_choice'} if($args{'on_choice'} && ref($args{'on_choice'}) eq 'CODE') ;
+	$self->{'on_info'} = $args{'on_info'} if($args{'on_info'} && ref($args{'on_info'}) eq 'CODE') ;
 	$self->{'on_unknow'} = $args{'on_unknow'} if($args{'on_unknow'} && ref($args{'on_unknow'}) eq 'CODE') ;
+	$self->{SGO} = $args{'slackget_object'} if($args{'slackget_object'} && ref($args{'slackget_object'}) eq 'slackget10');
 	$self->{SOCKET} = $args{'socket'} ;
 	$self->{TIMEOUT} = 3;
 	$self->{TIMEOUT} = $args{'timeout'} if(defined($args{'timeout'})) ;
@@ -85,6 +88,8 @@ Need a 'socket' argument :
 The constructor can take the followings arguments :
 
 B<socket> : a IO::Socket::INET wich is connected to the remote slack-getd
+
+B<slackget_object> : a reference to a valide slackget10 object.
 
 B<on_error> [handler] : a CODE reference to a sub which will be call on each error message returned by the server. This sub must take a string (the error message) as argument.
 
@@ -123,6 +128,10 @@ sub _handle_protocol
 	elsif($_=~/^choice:\s*(.*)/)
 	{
 		$self->{'on_choice'}->("[".$self->{SOCKET}->peerhost()."] $1");
+	}
+	elsif($_=~ /^info:(\d+):\s*(.*)/)
+	{
+		$self->{'on_info'}->($1,"[".$self->{SOCKET}->peerhost()."] $1");
 	}
 }
 
@@ -451,6 +460,31 @@ sub Host
 	return $self->{SOCKET}->peerhost() ;
 }
 
+=head1 ACCESSORS
+
+=head2 Socket
+
+return the current socket (IO::Socket::INET) object.
+
+=cut
+
+sub Socket
+{
+	my $self = shift;
+	return $self->{SOCKET} ;
+}
+
+=head2 slackget
+
+return the current slackget10 object.
+
+=cut
+
+sub slackget
+{
+	my $self = shift ;
+	return $self->{SGO} ;
+}
 
 =head1 PKGTOOLS BINDINGS
 
@@ -575,7 +609,7 @@ sub on_unknow
 
 =head2 on_choice
 
-Default handle for on_choice event. This method is not really suitable because she automatically choose the first package of the list.
+Default handle for on_choice event. This handler is not really suitable because she automatically choose the first package of the list.
 
 THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD
 
@@ -586,7 +620,23 @@ sub on_choice
 	my $arrayref = shift;
 	my $xml = shift;
 	die "[event::choice] the slackget10::Network::on_choice default handler cannot be called as an instance method.\n" if(ref($arrayref) eq 'slackget10::Network');
-	print STDERR "[event::choice] remote slack-getd report an unknow call from this client. the unknown command is '$xml'\n";
+	# TODO: finir cette méthode (implémenter le choix).
+}
+
+=head2 on_info
+
+Just print on standard output the info message wich have been receive.
+
+THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD
+
+=cut
+
+sub on_info
+{
+	my $mess = shift;
+	chomp $mess;
+	die "[event::info] the slackget10::Network::on_unknow default handler cannot be called as an instance method.\n" if(ref($mess) eq 'slackget10::Network');
+	print "[event::info] remote slack-getd send an information message \"$mess\"\n";
 }
 
 =head1 AUTHOR
@@ -601,7 +651,9 @@ L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
 
-=head1 ACKNOWLEDGEMENTS
+=head1 SEE ALSO
+
+L<slackget10::Network::Response>, L<slackget10::Status>, L<slackget10::Network::Connection>
 
 =head1 COPYRIGHT & LICENSE
 

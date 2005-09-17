@@ -4,6 +4,7 @@ use warnings;
 use strict;
 
 require slackget10::Status ;
+use File::Copy ;
 
 =head1 NAME
 
@@ -50,6 +51,7 @@ sub new
 		6 => "Can't install package : an error occured during $self->{CONF}->{common}->{pkgtools}->{'installpkg-binary'} system call\n",
 		7 => "Can't remove package : an error occured during $self->{CONF}->{common}->{pkgtools}->{'removepkg-binary'} system call\n",
 		8 => "Can't upgrade package : an error occured during $self->{CONF}->{common}->{pkgtools}->{'upgradepkg-binary'} system call\n",
+		9 => "Package scheduled for install on next reboot.\n",
 		10 => "An error occured in the slackget10::PkgTool class (during installpkg, upgradepkg or removepkg) but the class is unable to understand the error.\n"
 	};
 	bless($self,$class);
@@ -78,6 +80,7 @@ slackget10::PkgTools methods used the followings status :
 		6 : Can't install package : an error occured during <installpkg-binary /> system call
 		7 : Can't remove package : an error occured during <removepkg-binary /> system call
 		8 : Can't upgrade package : an error occured during <upgradepkg-binary /> system call
+		9 : Package scheduled for install on next reboot.
 		10 : An error occured in the slackget10::PkgTool class (during installpkg, upgradepkg or removepkg) but the class is unable to understand the error.
 
 =head2 install
@@ -96,7 +99,11 @@ sub install {
 		my ($self,$pkg) = @_;
 		my $status = new slackget10::Status (codes => $self->{STATUS});
 		#$self->{CONF}->{common}->{'update-directory'}/".$server->shortname."/cache/
-		if( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
+		if($pkg->getValue('install_later'))
+		{
+			mkdir "/tmp/slack_get_boot_install" unless( -e "/tmp/slack_get_boot_install") ;
+		}
+		elsif( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
 		{
 			if(system("$self->{CONF}->{common}->{pkgtools}->{'installpkg-binary'} $self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")==0)
 			{
@@ -120,7 +127,7 @@ sub install {
 	if(ref($object) eq 'slackget10::PackageList')
 	{
 		print "Do the job for a slackget10::PackageList\n";
-		foreach my $pack ($object->get_all())
+		foreach my $pack ( @{ $object->get_all() })
 		{
 			$pack->status($self->_install_package($pack));
 		}
@@ -176,6 +183,10 @@ sub upgrade {
 	if(ref($object) eq 'slackget10::PackageList')
 	{
 		print "Do the job for a slackget10::PackageList\n";
+		foreach my $pack ( @{ $object->get_all() })
+		{
+			$pack->status($self->_upgrade_package($pack));
+		}
 	}
 	elsif(ref($object) eq 'slackget10::Package')
 	{
@@ -228,6 +239,10 @@ sub remove {
 	if(ref($object) eq 'slackget10::PackageList')
 	{
 		print "Do the job for a slackget10::PackageList\n";
+		foreach my $pack ( @{ $object->get_all() })
+		{
+			$pack->status($self->_remove_package($pack));
+		}
 	}
 	elsif(ref($object) eq 'slackget10::Package')
 	{

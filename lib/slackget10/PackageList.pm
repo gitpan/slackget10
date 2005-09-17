@@ -152,91 +152,37 @@ sub Sort
 	$self->{LIST} = [ sort {$a->{ROOT} cmp $b->{ROOT} } @{ $self->{LIST} } ] ;
 }
 
-# =head2 add
-# 
-# Add the package passed in argument to the list. The argument must be a slackget10::Package object
-# 
-# 	$PackageList->add($package);
-# 
-# =cut
-# 
-# sub add {
-# 	my ($self,$pack) = @_ ;
-# 	
-# 	return undef if(ref($pack) ne 'slackget10::Package');
-# 	push @{$self->{LIST}}, $pack;
-# 	return 1;
-# }
-# 
-# =head2 get
-# 
-# return the $index slackget10::Package object in the list
-# 
-# 	$PackageList->get($index);
-# 
-# =cut
-# 
-# sub get {
-# 	my ($self,$idx) = @_ ;
-# 	return $self->{LIST}->[$idx];
-# }
-# 
-# =head2 get_all
-# 
-# return a reference on an array containing all packages.
-# 
-# 	$arrayref = $PackageList->get_all();
-# 
-# =cut
-# 
-# sub get_all {
-# 	my $self = shift ;
-# 	return $self->{LIST};
-# }
-# 
-# =head2 Shift
-# 
-# Same as the Perl shift. Shifts of and return the first slackget10::Package of the slackget10::PackageList;
-# 
-# 	$package = $PackageList->Shift();
-# 
-# =cut
-# 
-# sub Shift {
-# 	my ($self) = @_ ;
-# 	return shift(@{$self->{LIST}});
-# }
-# 
-# =head2 to_XML
-# 
-# return an XML encoded string.
-# 
-# 	$xml = $PackageList->to_XML();
-# 
-# =cut
-# 
-# sub to_XML
-# {
-# 	my $self = shift;
-# 	my $xml = '';
-# 	$xml .= "<packagelist>\n" unless($self->{'no-root-tag'});
-# 	foreach (@{$self->{LIST}}){
-# 		$xml .= $_->to_XML();
-# 	}
-# 	$xml .= "</packagelist>\n" unless($self->{'no-root-tag'});
-# 	return $xml;
-# }
-# 
-# =head2 to_string
-# 
-# Alias for to_XML()
-# 
-# =cut
-# 
-# sub to_string{
-# 	my $self = shift;
-# 	$self->to_XML();
-# }
+=head2 index_list
+
+Create an index on the PackageList. This index don't take many memory but speed a lot search, especially when you already have the package id !
+
+The index is build with the Package ID.
+
+=cut
+
+sub index_list
+{
+	my $self = shift ;
+	$self->{INDEX} = {} ;
+	foreach my $pkg (@{$self->{LIST}})
+	{
+		$self->{INDEX}->{$pkg->get_id()} = $pkg ;
+	}
+}
+
+=head2 get_indexed
+
+Return a package, as well as Get() do but use the index to return it quickly. You must provide a package ID to this method.
+
+	my $pkg = $list->get_indexed($qlistviewitem->text(5)) ;
+
+=cut
+
+sub get_indexed
+{
+	my ($self, $id) = @_ ;
+	return $self->{INDEX}->{$id} ;
+}
 
 
 =head1 AUTHOR

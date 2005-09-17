@@ -64,7 +64,7 @@ sub search_package {
 	my ($self,$string) = @_ ;
 	my @result;
 	foreach (@{$self->{PKGLIST}->get_all()}){
-		if($_->get_id() =~ /$string/i or $_->name() =~ /$string/i){
+		if($_->get_id() =~ /\Q$string\E/i or $_->name() =~ /\Q$string\E/i){
 			push @result, $_;
 		}
 	}
@@ -86,7 +86,30 @@ sub exact_search
 	my $k=0;
 	foreach (@{$self->{PKGLIST}->get_all()}){
 		next unless(defined($_));
-		if($_->get_id() =~ /$string/i or $_->name() =~ /$string/i){
+		if($_->get_id() eq $string){
+			push @result, $k;
+		}
+		$k++;
+	}
+	return (@result);
+}
+
+=head2 exact_name_search
+
+Same as exact_search() but search on the name of the package instead of its id.
+
+	$idx = $packageslist->exact_search('perl-mime-base64');
+
+=cut
+
+sub exact_name_search
+{
+	my ($self,$string) = @_ ;
+	my @result;
+	my $k=0;
+	foreach (@{$self->{PKGLIST}->get_all()}){
+		next unless(defined($_));
+		if($_->name() eq $string){
 			push @result, $k;
 		}
 		$k++;
@@ -106,7 +129,7 @@ sub search_package_in_description {
 	my ($self,$string) = @_ ;
 	my @result;
 	foreach (@{$self->{PKGLIST}->get_all()}){
-		if($_->get_id() =~ /$string/i or $_->description() =~ /$string/i){
+		if($_->get_id() =~ /\Q$string\E/i or $_->description() =~ /\Q$string\E/i){
 			push @result, $_;
 		}
 	}
@@ -135,7 +158,7 @@ sub search_package_multi_fields {
 					last ;
 				}
 			}
-			if($_->get_id() =~ /$string/i or (defined($_->getValue($field)) && $_->getValue($field)=~ /$string/i)){
+			if($_->get_id() =~ /\Q$string\E/i or (defined($_->getValue($field)) && $_->getValue($field)=~ /\Q$string\E/i)){
 				push @result, $_;
 				last;
 			}

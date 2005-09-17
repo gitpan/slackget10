@@ -19,7 +19,7 @@ Version 0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 SYNOPSIS
 
@@ -69,7 +69,15 @@ sub new {
 	die "FATAL: You must pass a configuration file as -config parameter.\n" if(!defined($args{'-config'}) || ! -e $args{'-config'}) ;
 	die "FATAL: You must pass a name for this instance of slackget10 via the -name parameter.\n" if(!defined($args{'-name'})) ;
 	die "FATAL: You must pass a version to this constructor via the -version parameter.\n" if(!defined($args{'-version'})) ;
-	$self->{'config'} = new slackget10::Config ( $args{'-config'} ) or die "FATAL: error during configuration file parsing\n$!\n" ;
+	$self->{'config'} = new slackget10::Config ( $args{'-config'} )  or die "FATAL: error during configuration file parsing\n$!\n" ;
+# 	printf("create log...
+# 		LOG_FORMAT => $self->{'config'}->{common}->{'log'}->{'log-format'},
+# 		NAME => $args{'-name'},
+# 		VERSION => $args{'-version'},
+# 		LOG_FILE => $self->{'config'}->{common}->{'log'}->{'log-file'},
+# 		LOG_LEVEL => $self->{'config'}->{common}->{'log'}->{'log-level'},
+# 		FILE_ENCODING => $self->{'config'}->{common}->{'file-encoding'}
+# 	\n");
 	$self->{'log'} = slackget10::Log->new(
 		LOG_FORMAT => $self->{'config'}->{common}->{'log'}->{'log-format'},
 		NAME => $args{'-name'},
@@ -91,7 +99,7 @@ sub new {
 
 Search for all plugins in the followings directories : <all @INC directories>/lib/slackget10/Plugin/, <INSTALLDIR>/lib/slackget10/Plugin/, <HOME DIRECTORY>/lib/slackget10/Plugin/.
 
-When you call this method, she scan in thoses directory and try to load all files ending by .pm. The loading is in 3 times :
+When you call this method, she scan in thoses directory and try to load all files ending by .pm. The loading is in 4 times :
 
 1) scan for plug-in
 
@@ -129,6 +137,7 @@ sub load_plugins {
 				chomp $name ;
 				$name =~ s/.+\/([^\/]+)\.pm$/$1/;
 				$self->log()->Log(2,"found plug-in: $name\n") ;
+# 				print "[SG10] found plug-in: $name\n" ;
 				push @plugins_name, $name;
 			}
 		}	
@@ -155,6 +164,7 @@ sub load_plugins {
 		}
 		else
 		{
+# 			print "[SG10] loaded success for plug-in $plg\n" ;
 			push @loaded_plugins, $plg;
 		}
 	}
@@ -164,7 +174,7 @@ sub load_plugins {
 	foreach my $plugin (@loaded_plugins)
 	{
 		my $package = "slackget10::Plugin::$plugin";
-		my $ret = eval $package.qq{->new ($self);};
+		my $ret = eval{ $package->new($self) ; }  ; 
 		if($@ or !$ret)
 		{
 			warn "Fatal Error while creating new instance of plugin $package: $@\n";
@@ -172,6 +182,7 @@ sub load_plugins {
 		}
 		else
 		{
+# 			print "[SG10] $plugin instanciates\n" ;
 			push @plugins, $ret;
 		}
 	}
@@ -188,10 +199,44 @@ sub load_plugins {
 		{
 			if($plugin->can(lc($hook)))
 			{
+# 				print "[SG10] registered plug-in $plugin for hook $hook\n" ;
 				push @{ $self->{'plugin'}->{'sorted'}->{$hook} },$plugin ;
 			}
 		}
 	}
+}
+
+=head2 call_plugins
+
+Main method for calling back differents plug-in. This method is quite easy to use : just call it with a hook name in parameter.
+
+call_plugins() will iterate on all plug-ins wich implements the given HOOK.
+
+	$sgo->call_plugins( 'HOOK_START_DAEMON' ) ;
+
+Additionaly you can pass all arguments you need to pass to the callback which take care of the HOOK. All extra arguments are passed to the callback.
+
+Since all plug-ins have access to many objects which allow them to perform all needed operations (like logging etc), they have to care about output and user information.
+
+So all call will be eval-ed and juste a little log message will be done on error.
+
+=cut
+
+sub call_plugins
+{
+	my $self = shift;
+	my $HOOK = shift ;
+	my @returned;
+	foreach my $pg ( @{ $self->{'plugin'}->{'sorted'}->{$HOOK} })
+	{
+		my $callback = lc($HOOK);
+		push @returned, eval{ $pg->$callback(@_) ;} ;
+		if($@)
+		{
+			$self->{'log'}->Log(1,"An error occured while attempting to call plug-in ".ref($pg)." for hook $HOOK. The error occured in method $callback. The evaluation return the following error : $@\n");
+		}
+	}
+	return @returned ;
 }
 
 =head1 ACCESSORS
