@@ -14,7 +14,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '0.5.8';
 
 =head1 SYNOPSIS
 
@@ -112,27 +112,38 @@ All methods return a slackget10::Network::Response (L<slackget10::Network::Respo
 sub _handle_protocol
 {
 	my $self = shift ;
-	my $mess = shift;
-	if($_=~/^error:\s*(.*)/)
+# 	my $mess = shift;
+	if($_[0]=~/^error:\s*(.*)/)
 	{
+		print "Handling protocol : error msg calling $self->{'on_error'}\n";
 		$self->{'on_error'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		$_[0] =~ s/.*//g;
 	}
-	elsif($_=~/^success:\s*(.*)/)
+	elsif($_[0]=~/^success:\s*(.*)/)
 	{
+		print "Handling protocol : success msg calling $self->{'on_success'}\n";
 		$self->{'on_success'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		$_[0] =~ s/.*//g;
 	}
-	elsif($_=~/^unknown_said:\s*(.*)/)
+	elsif($_[0]=~/^unknown_said:\s*(.*)/)
 	{
+		print "Handling protocol : unknow msg calling $self->{'on_unknow'}\n";
 		$self->{'on_unknow'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		$_[0] =~ s/.*//g;
 	}
-	elsif($_=~/^choice:\s*(.*)/)
+	elsif($_[0]=~/^choice:\s*(.*)/)
 	{
+		print "Handling protocol : choice msg calling $self->{'on_choice'}\n";
 		$self->{'on_choice'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		$_[0] =~ s/.*//g;
 	}
-	elsif($_=~ /^info:(\d+):\s*(.*)/)
+	elsif($_[0]=~ /^info:(\d+):\s*(.*)/)
 	{
+		print "Handling protocol : info msg calling $self->{'on_info'}\n";
 		$self->{'on_info'}->($1,"[".$self->{SOCKET}->peerhost()."] $1");
+		$_[0] =~ s/.*//g;
 	}
+	
 }
 
 =head2 get_installed_list
@@ -154,7 +165,11 @@ sub get_installed_list {
 	my $str = '';
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: get_installed_list/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{
@@ -193,7 +208,12 @@ sub get_packages_list {
 	my $str = '';
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			print "[DEBUG] daemon ask us to wait\n";
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: get_packages_list/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{
@@ -205,7 +225,7 @@ sub get_packages_list {
 			last ;
 		}
 		$self->_handle_protocol($_) ;
-		$str .= $_;
+		$str .= $_ if($_);
 	}
 	return slackget10::Network::Response->new(
 	is_success => 1,
@@ -229,7 +249,11 @@ sub get_html_info
 	my $str = '';
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: get_html_info/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{
@@ -264,7 +288,11 @@ sub build_packages_list
 	my $str = '';
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: build_packages_list/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{
@@ -302,7 +330,11 @@ sub build_installed_list
 	my $str = '';
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: build_installed_list/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{
@@ -340,7 +372,11 @@ sub build_server_list
 	my $str = '';
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: build_server_list/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{
@@ -380,7 +416,11 @@ sub search
 	my $str = '';
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: search/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{
@@ -402,26 +442,33 @@ sub search
 
 =head2 websearch
 
-take at least two parameters : the word you search for, and a field. Valid fields are those who describe a package entity in the packages.xml file.
+Take 2 parameters : a reference on an array which contains the words to search for, and another array reference which contains a list of fields (valid fields are thoses describe in the packages.xml file).
 
 
 The DATA section of the response (L<slackget10::Network::Response>) will contain an ARRAYREF. Each cell of this array will contains a package in HTML
 The returned data is HTML, each package are separed by a line wich only contain the string "__MARK__"
 
+	my $response = $network->websearch([ 'burn', 'cd' ], [ 'name', 'description' ]) ;
+
 =cut
 
 sub websearch
 {
-	my ($self,$word,@args) = @_ ;
+	my ($self,$requests,$args) = @_ ;
 	my $socket = $self->{SOCKET} ;
-	my $fields = join(';',@args);
+	my $fields = join(';',@{$args});
+	my $words = join(';',@{$requests}) ;
 # 	chop $fields ;
-	print $socket "websearch:$word:$fields\n";
+	print $socket "websearch:$words:$fields\n";
 	my $str = [];
 	my $idx = 0;
 	while(<$socket>)
 	{
-		next if($_=~ /^wait:/);
+		if($_=~ /^wait:/)
+		{
+			sleep 1;
+			next ;
+		}
 		last if($_=~ /^end: websearch/);
 		if ($_=~ /auth_violation:\s*(.*)/)
 		{

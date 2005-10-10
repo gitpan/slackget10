@@ -19,7 +19,7 @@ Version 0.08
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 SYNOPSIS
 
@@ -120,11 +120,23 @@ For performance consideration we don't want to clone all accesible objects, so a
 
 4) dispatch plug-ins' instance by supported HOOK.
 
+Parameters :
+
+1) An ARRAY reference on supported Hooks.
+
+2) the type of plug-in you want to load.
+
+Ex:
+
+	$sgo->load_plugins( ['HOOK_COMMAND_LINE_OPTIONS','HOOK_COMMAND_LINE_HELP','HOOK_START_DAEMON','HOOK_RESTART_DAEMON','HOOK_STOP_DAEMON'], 'daemon');
+
 =cut
 
 sub load_plugins {
 	my $self = shift;
 	my $HOOKS = shift;
+	my $plugin_type = shift; # TODO: implémenter la séléction des types de plug-in
+# 	print "[SG10] needed type : $plugin_type\n";
 	#NOTE : searching for install plug-in
 	$self->log()->Log(2,"searching for plug-in\n") ;
 	my @plugins_name;
@@ -137,7 +149,7 @@ sub load_plugins {
 				chomp $name ;
 				$name =~ s/.+\/([^\/]+)\.pm$/$1/;
 				$self->log()->Log(2,"found plug-in: $name\n") ;
-# 				print "[SG10] found plug-in: $name\n" ;
+ 				print "[SG10] found plug-in: $name in $dir/slackget10/Plugin/\n" ;
 				push @plugins_name, $name;
 			}
 		}	
@@ -164,8 +176,16 @@ sub load_plugins {
 		}
 		else
 		{
-# 			print "[SG10] loaded success for plug-in $plg\n" ;
-			push @loaded_plugins, $plg;
+			my $package = "slackget10::Plugin::$plg";
+# 			print "[SG10] \$package:$package\n";
+			my $type = '$'.$package.'::PLUGIN_TYPE';
+# 			print "[SG10] \$type:$type\n";
+			if(defined(eval qq{ $type }) && (eval qq{ $type } eq $plugin_type or eval qq{ $type } eq 'ALL'))
+			{
+				print "[SG10] loaded success for plug-in $plg\n" ;
+				$self->log()->Log(3,"loaded success for plug-in $plg\n") ;
+				push @loaded_plugins, $plg;
+			}
 		}
 	}
 	#NOTE : creating new instances
@@ -183,6 +203,7 @@ sub load_plugins {
 		else
 		{
 # 			print "[SG10] $plugin instanciates\n" ;
+			$self->log()->Log(3,"$plugin instanciates\n") ;
 			push @plugins, $ret;
 		}
 	}
@@ -200,6 +221,7 @@ sub load_plugins {
 			if($plugin->can(lc($hook)))
 			{
 # 				print "[SG10] registered plug-in $plugin for hook $hook\n" ;
+				$self->log()->Log(3,"registered plug-in $plugin for hook $hook\n") ;
 				push @{ $self->{'plugin'}->{'sorted'}->{$hook} },$plugin ;
 			}
 		}

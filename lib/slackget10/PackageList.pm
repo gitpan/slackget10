@@ -36,7 +36,7 @@ This class is a container of slackget10::Package object, and allow you to perfor
 
 =head2 new
 
-This class constructor don't take any parameters, but you can eventually disable the root tag <packagelist> by using 'no-root-tag' => 1.
+This class constructor don't take any parameters to works properly, but you can eventually disable the root tag <packagelist> by using 'no-root-tag' => 1, and modify the default encoding (utf8) by passing an 'encoding' => <your encoding> parameter.
 
 	my $PackageList = new slackget10::PackageList ();
 	my $PackageList = new slackget10::PackageList ('no-root-tag' => 1);
@@ -46,7 +46,13 @@ This class constructor don't take any parameters, but you can eventually disable
 sub new
 {
 	my ($class,%args) = @_ ;
-	my $self={list_type => 'slackget10::Package','root-tag' => 'package-list'};
+	my $encoding = 'utf8';
+	if(defined($args{'encoding'}) && $args{'encoding'} !~ /^\s*$/)
+	{
+		$encoding = $args{'encoding'} ;
+		delete($args{'encoding'}) ;
+	}
+	my $self={list_type => 'slackget10::Package','root-tag' => 'package-list',ENCODING => $encoding};
 	foreach (keys(%args))
 	{
 		$self->{$_} = $args{$_};
@@ -118,6 +124,7 @@ sub fill_from_xml
 		$xml .= $_ ;
 	}
 	require XML::Simple ;
+	$XML::Simple::PREFERRED_PARSER='XML::Parser' ;
 	my $xml_in = XML::Simple::XMLin($xml,KeyAttr => {'package' => 'id'});
 # 	use Data::Dumper ;
 # 	print Data::Dumper::Dumper($xml_in);

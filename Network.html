@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::Network - A class for network communication</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#constructor">CONSTRUCTOR</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#get_installed_list">get_installed_list</a></li>
+		<li><a href="#get_packages_list">get_packages_list</a></li>
+		<li><a href="#get_html_info">get_html_info</a></li>
+		<li><a href="#build_packages_list">build_packages_list</a></li>
+		<li><a href="#build_installed_list">build_installed_list</a></li>
+		<li><a href="#build_server_list">build_server_list</a></li>
+		<li><a href="#search">search</a></li>
+		<li><a href="#websearch">websearch</a></li>
+		<li><a href="#host">Host</a></li>
+	</ul>
+
+	<li><a href="#accessors">ACCESSORS</a></li>
+	<ul>
+
+		<li><a href="#socket">Socket</a></li>
+		<li><a href="#slackget">slackget</a></li>
+	</ul>
+
+	<li><a href="#pkgtools_bindings">PKGTOOLS BINDINGS</a></li>
+	<ul>
+
+		<li><a href="#installpkg">installpkg</a></li>
+		<li><a href="#upgradepkg">upgradepkg</a></li>
+		<li><a href="#removepkg">removepkg</a></li>
+		<li><a href="#quit">quit</a></li>
+	</ul>
+
+	<li><a href="#default_handlers">DEFAULT HANDLERS</a></li>
+	<ul>
+
+		<li><a href="#on_success">on_success</a></li>
+		<li><a href="#on_error">on_error</a></li>
+		<li><a href="#on_unknow">on_unknow</a></li>
+		<li><a href="#on_choice">on_choice</a></li>
+		<li><a href="#on_info">on_info</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::Network - A class for network communication</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>Version 1.0.0</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This class' purpose is to make all network dialog transparent. Instead of sending</p>
+<pre>
+    use slackget10::Network;</pre>
+<pre>
+    my $net = slackget10::Network-&gt;new(
+        socket =&gt; IO::Socket::INET-&gt;new(
+                PeerAddr =&gt; 192.168.0.10,
+                PeerPort =&gt; 42000)
+    );
+    my $installed = $net-&gt;get_installed_list ;
+    my $reponse = $net-&gt;install_packages(&quot;gcc-objc;gcc-g++;gcc&quot;);
+    if($response-&gt;is_success)
+    {
+        print &quot;Packages successfully installed\n&quot;;
+    }
+    elsif($response-&gt;have_choice)
+    {
+        print $response-&gt;data ;
+    }
+    elsif($response-&gt;is_error)
+    {
+        print &quot;An error occured during install. Remote daemon said : &quot;,$response-&gt;data ,&quot;\n&quot;;
+    }</pre>
+<p>All methods from this module return a slackget10::Network::Response (<a href="/doc//slackget10/Network/Response.html">the slackget10::Network::Response manpage</a>) object.</p>
+<p>In the same way they all handle network exceptions from remote daemon.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="constructor">CONSTRUCTOR</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>Need a 'socket' argument :</p>
+<pre>
+    my $net = slackget10::Network-&gt;new(
+        socket =&gt; IO::Socket::INET-&gt;new(
+                PeerAddr =&gt; 192.168.0.10,
+                PeerPort =&gt; 42000)
+    );</pre>
+<p>The constructor can take the followings arguments :</p>
+<p><strong>socket</strong> : a IO::Socket::INET wich is connected to the remote slack-getd</p>
+<p><strong>slackget_object</strong> : a reference to a valide slackget10 object.</p>
+<p><strong>on_error</strong> [handler] : a CODE reference to a sub which will be call on each error message returned by the server. This sub must take a string (the error message) as argument.</p>
+<p><strong>on_success</strong> [handler] : a CODE reference to a sub which will be call on each success message returned by the server. This sub must take a string (the error message) as argument.</p>
+<p><strong>on_unknow</strong> [handler] : a CODE reference to a sub which will be call on each unknown command message returned by the remote slack-getd. This sub must take a string (the error message) as argument.</p>
+<p><strong>on_choice</strong> [handler] : a CODE reference to a sub wich will be call each time a choice is needed. This sub must take a reference to an array as first argument and the whole XML string which represent the choice as second argument. The arrayref is where the treatment method will put the result of the choice. Please look at the source code of the on_choice method for more informations.</p>
+<p>There is also one special event : 'end' which is not hookable. It may be in the futur but this event is send when all treatment and data relative to the last command are terminate (but there is no information about the state in this event). It seems that this is usefull only to this module's methods.</p>
+<p>Look at the <a href="#default_handlers">DEFAULT HANDLERS</a> section for more informations one default handlers.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>All methods return a slackget10::Network::Response (<a href="/doc//slackget10/Network/Response.html">the slackget10::Network::Response manpage</a>) object, and if the remote slack-getd return some data they are accessibles via the <code>data()</code> accessor of the slackget10::Network::Response object.</p>
+<p>
+</p>
+<h2><a name="get_installed_list">get_installed_list</a></h2>
+<p>get the list of installed packages on the remote daemon.</p>
+<pre>
+        my $installed_list = $net-&gt;get_installed_list ;</pre>
+<p>If an error occured call the appropriate handler.</p>
+<p>In all case return a slackget10::Network::Response (<a href="/doc//slackget10/Network/Response.html">the slackget10::Network::Response manpage</a>) object.</p>
+<p>
+</p>
+<h2><a name="get_packages_list">get_packages_list</a></h2>
+<p>get the list of new avalaible packages on the remote daemon.</p>
+<pre>
+        my $status = $net-&gt;get_packages_list ;</pre>
+<p>If an error occured call the appropriate handler.</p>
+<p>In all case return a slackget10::Network::Response (<a href="/doc//slackget10/Network/Response.html">the slackget10::Network::Response manpage</a>) object.</p>
+<p>
+</p>
+<h2><a name="get_html_info">get_html_info</a></h2>
+<p>Get an HTML encoded string which give some general information on the remote slack-getd</p>
+<pre>
+        print $net-&gt;get_html_info ;</pre>
+<p>
+</p>
+<h2><a name="build_packages_list">build_packages_list</a></h2>
+<p>Said to the remote slack-getd to build the new packages cache.</p>
+<pre>
+        my $status = $net-&gt;build_packages_list ;</pre>
+<p>The returned status contains no significant data in case of success.</p>
+<p>
+</p>
+<h2><a name="build_installed_list">build_installed_list</a></h2>
+<p>Said to the remote slack-getd to build the installed packages cache.</p>
+<pre>
+        my $status = $net-&gt;build_installed_list ;</pre>
+<p>The returned status contains no significant data in case of success.</p>
+<p>
+</p>
+<h2><a name="build_server_list">build_server_list</a></h2>
+<p>Said to the remote slack-getd to build the server list (servers.xml file).</p>
+<pre>
+        my $status = $net-&gt;build_server_list ;</pre>
+<p>The returned status contains no significant data in case of success.</p>
+<p>
+</p>
+<h2><a name="search">search</a></h2>
+<p>take at least two parameters : the word you search for, and a field. Valid fields are those who describe a package entity in the packages.xml file.</p>
+<pre>
+        my $response = $net-&gt;search('gcc','name','description') ; # search for package containing 'gcc' in fields 'name' and 'description'</pre>
+<p>Return the remote slack-getd's response in the DATA section of the response (<a href="/doc//slackget10/Network/Response.html">the slackget10::Network::Response manpage</a>).</p>
+<p>
+</p>
+<h2><a name="websearch">websearch</a></h2>
+<p>Take 2 parameters : a reference on an array which contains the words to search for, and another array reference which contains a list of fields (valid fields are thoses describe in the packages.xml file).</p>
+<p>The DATA section of the response (<a href="/doc//slackget10/Network/Response.html">the slackget10::Network::Response manpage</a>) will contain an ARRAYREF. Each cell of this array will contains a package in HTML
+The returned data is HTML, each package are separed by a line wich only contain the string ``__MARK__''</p>
+<pre>
+        my $response = $network-&gt;websearch([ 'burn', 'cd' ], [ 'name', 'description' ]) ;</pre>
+<p>
+</p>
+<h2><a name="host">Host</a></h2>
+<p>Call the <code>peerhost()</code> method of the current IO::Socket::INET object and return the result.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="accessors">ACCESSORS</a></h1>
+<p>
+</p>
+<h2><a name="socket">Socket</a></h2>
+<p>return the current socket (IO::Socket::INET) object.</p>
+<p>
+</p>
+<h2><a name="slackget">slackget</a></h2>
+<p>return the current slackget10 object.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="pkgtools_bindings">PKGTOOLS BINDINGS</a></h1>
+<p>Methods in this section are the remote call procedure for pkgtools interactions. The slack-getd daemon use another class for direct call to the pkgtools (<a href="/doc//slackget10/PkgTools.html">the slackget10::PkgTools manpage</a>).</p>
+<p>The 3 methods have the same operating mode :</p>
+<p>1) Take a single slackget10::PackageList as argument</p>
+<p>2) Do the job</p>
+<p>3) If their is more than one choice for the package you try to install, the daemon ask for a choice of you.</p>
+<p>3bis) Re-do the job</p>
+<p>4) For each package in the slackget10::PackageList set a 'status' field which contain the status of the (install|upgrade|remove) process.</p>
+<p>
+</p>
+<h2><a name="installpkg">installpkg</a></h2>
+<pre>
+        $net-&gt;installpkg($packagelist) ;</pre>
+<p>
+</p>
+<h2><a name="upgradepkg">upgradepkg</a></h2>
+<p>
+</p>
+<h2><a name="removepkg">removepkg</a></h2>
+<p>
+</p>
+<h2><a name="quit">quit</a></h2>
+<p>Close the current connection.</p>
+<pre>
+        $net-&gt;quit ;</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="default_handlers">DEFAULT HANDLERS</a></h1>
+<p>
+</p>
+<h2><a name="on_success">on_success</a></h2>
+<p>Just print on standard error output the success message.</p>
+<p>THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD</p>
+<p>
+</p>
+<h2><a name="on_error">on_error</a></h2>
+<p>Just print on standard error output the error message.</p>
+<p>THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD</p>
+<p>
+</p>
+<h2><a name="on_unknow">on_unknow</a></h2>
+<p>Just print on standard error output an error message with the unknown command.</p>
+<p>THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD</p>
+<p>
+</p>
+<h2><a name="on_choice">on_choice</a></h2>
+<p>Default handle for on_choice event. This handler is not really suitable because she automatically choose the first package of the list.</p>
+<p>THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD</p>
+<p>
+</p>
+<h2><a name="on_info">on_info</a></h2>
+<p>Just print on standard output the info message wich have been receive.</p>
+<p>THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Please report any bugs or feature requests to
+<code>bug-slackget10@rt.cpan.org</code>, or through the web interface at
+<a href="http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10">http://rt.cpan.org/NoAuth/ReportBug.html</a>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><a href="/doc//slackget10/Network/Response.html">the slackget10::Network::Response manpage</a>, <a href="/doc//slackget10/Status.html">the slackget10::Status manpage</a>, <a href="/doc//slackget10/Network/Connection.html">the slackget10::Network::Connection manpage</a></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.</p>
+<p>This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

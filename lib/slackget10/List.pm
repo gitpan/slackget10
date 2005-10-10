@@ -13,7 +13,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '0.8.9';
 
 =head1 SYNOPSIS
 
@@ -66,6 +66,8 @@ sub new
 	return undef unless(defined($args{list_type}));
 	my $self={%args};
 	$self->{LIST} = [] ;
+	$self->{ENCODING} = 'utf8' ;
+	$self->{ENCODING} = $args{'encoding'} if(defined($args{'encoding'})) ;
 	bless($self,$class);
 	return $self;
 }
@@ -149,8 +151,9 @@ return an XML encoded string.
 sub to_XML
 {
 	my $self = shift;
-	my $xml = '';
-	$xml .= "<$self->{'root-tag'}>\n" if(!defined($self->{'no-root-tag'}) && defined($self->{'root-tag'}));
+	my $xml = "";
+	$self->{ENCODING} = uc($self->{ENCODING}) ; # NOTE: vérifier que ça ne merde pas. 
+	$xml .= "<?xml version=\"1.0\" encoding=\"$self->{ENCODING}\" standalone=\"yes\"?>\n<$self->{'root-tag'}>\n" if(!defined($self->{'no-root-tag'}) && defined($self->{'root-tag'}));
 	foreach (@{$self->{LIST}}){
 		$xml .= $_->to_XML();
 	}

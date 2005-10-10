@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::Date - A class to manage date for slack-get.</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#constructor">CONSTRUCTOR</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#compare">compare</a></li>
+		<li><a href="#is_equal">is_equal</a></li>
+		<li><a href="#_fill_undef__private_">_fill_undef [PRIVATE]</a></li>
+		<li><a href="#to_xml">to_XML</a></li>
+		<li><a href="#to_html">to_HTML</a></li>
+		<li><a href="#to_string">to_string</a></li>
+	</ul>
+
+	<li><a href="#accessors">ACCESSORS</a></li>
+	<ul>
+
+		<li><a href="#year">year</a></li>
+		<li><a href="#monthname">monthname</a></li>
+		<li><a href="#dayname">dayname</a></li>
+		<li><a href="#hour">hour</a></li>
+		<li><a href="#daynumber">daynumber</a></li>
+		<li><a href="#monthnumber">monthnumber</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::Date - A class to manage date for slack-get.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>Version 1.0.0</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This class is an abstraction of a date. It centralyze all operation you can do on a date (like comparisons)</p>
+<pre>
+    use slackget10::Date;</pre>
+<pre>
+    my $date = slackget10::Date-&gt;new('day-name' =&gt; Mon, 'day-number' =&gt; 5, 'year' =&gt; 2005);
+    $date-&gt;year ;
+    my $status = $date-&gt;compare($another_date_object);
+    if($date-&gt;is_equal($another_date_object))
+    {
+        print &quot;Nothing to do : date are the same\n&quot;;
+    }</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="constructor">CONSTRUCTOR</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>The constructor take the followings arguments :</p>
+<pre>
+        day-name =&gt; the day name in : Mon, Tue, Wed, Thu, Fri, Sat, Sun
+        day-number =&gt; the day number from 1 to 31. WARNINGS : there is no verification about the date validity !
+        month-name  =&gt; the month name (Jan, Feb, Apr, etc.)
+        month-number =&gt; the month number (1 to 12)
+        hour =&gt; the hour ( a string like : 12:52:00). The separator MUST BE ':'
+        year =&gt; a chicken name...no it's a joke the year (ex: 2005).
+        use-approximation =&gt; in this case the comparisons method just compare the followings : day, month and year. (default: no)</pre>
+<p>You have to manage by yourself the date validity, because this class doesn't check the date validity. The main reason of this, is that this class is use to compare the date of specials files.</p>
+<p>So I use the predicate that peoples which make thoses files don't try to do a joke by a false date.</p>
+<pre>
+        my $date = slackget10::Date-&gt;new(
+                'day-name' =&gt; Mon, 
+                'day-number' =&gt; 5, 
+                'year' =&gt; 2005,
+                'month-number' =&gt; 2,
+                'hour' =&gt; '12:02:35',
+                'use-approximation' =&gt; undef
+        );</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>
+</p>
+<h2><a name="compare">compare</a></h2>
+<p>This mathod compare the current date object with a date object passed as parameter.</p>
+<pre>
+        my $status = $date-&gt;compare($another_date);</pre>
+<p>The returned status is :</p>
+<pre>
+        0 : $another_date is equal to $date
+        1 : $date is greater than $another_date
+        2 : $date is lesser than $another_date</pre>
+<p>
+</p>
+<h2><a name="is_equal">is_equal</a></h2>
+<p>Take another date object as parameter and return TRYUE (1) if this two date object are equal (if <code>compare()</code> return 0), and else return false (0).</p>
+<pre>
+        if($date-&gt;is_equal($another_date)){
+                ...do smoething...
+        }</pre>
+<p>WARNING : this method also return undef if $another_date is not a slackget10::Date object, so be carefull.</p>
+<p>
+</p>
+<h2><a name="_fill_undef__private_">_fill_undef [PRIVATE]</a></h2>
+<p>This method is call by the constructor to resolve the month equivalence (name/number).</p>
+<p>This method affect 0 to all undefined numerical values.</p>
+<p>
+</p>
+<h2><a name="to_xml">to_XML</a></h2>
+<p>return the date as an XML encoded string.</p>
+<pre>
+        $xml = $date-&gt;to_XML();</pre>
+<p>
+</p>
+<h2><a name="to_html">to_HTML</a></h2>
+<p>return the date as an HTML encoded string.</p>
+<pre>
+        $xml = $date-&gt;to_HTML();</pre>
+<p>
+</p>
+<h2><a name="to_string">to_string</a></h2>
+<p>return the date as a plain text string.</p>
+<pre>
+        print &quot;Date of the package is &quot;, $package-&gt;date()-&gt;to_string,&quot;\n&quot;;</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="accessors">ACCESSORS</a></h1>
+<p>
+</p>
+<h2><a name="year">year</a></h2>
+<p>return the year</p>
+<pre>
+        my $string = $date-&gt;year;</pre>
+<p>
+</p>
+<h2><a name="monthname">monthname</a></h2>
+<p>return the monthname</p>
+<pre>
+        my $string = $date-&gt;monthname;</pre>
+<p>
+</p>
+<h2><a name="dayname">dayname</a></h2>
+<p>return the 'day-name'</p>
+<pre>
+        my $string = $date-&gt;'day-name';</pre>
+<p>
+</p>
+<h2><a name="hour">hour</a></h2>
+<p>return the hour</p>
+<pre>
+        my $string = $date-&gt;hour;</pre>
+<p>
+</p>
+<h2><a name="daynumber">daynumber</a></h2>
+<p>return the daynumber</p>
+<pre>
+        my $string = $date-&gt;daynumber;</pre>
+<p>
+</p>
+<h2><a name="monthnumber">monthnumber</a></h2>
+<p>return the monthnumber</p>
+<pre>
+        my $string = $date-&gt;monthnumber;</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Please report any bugs or feature requests to
+<code>bug-slackget10-networking@rt.cpan.org</code>, or through the web interface at
+<a href="http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10">http://rt.cpan.org/NoAuth/ReportBug.html</a>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.</p>
+<p>This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

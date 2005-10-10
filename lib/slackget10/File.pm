@@ -13,7 +13,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.0.1';
 
 =head1 SYNOPSIS
 
@@ -232,6 +232,7 @@ You also can call this method without any parameter :
 In this case, the Write() method will wrote data in memory into the last opened file (with Read() or new()).
 
 The default encoding of this method is utf-8, pass an extra argument : file-encoding to the constructor to change that.
+
 =cut
 
 sub Write
@@ -366,6 +367,19 @@ sub encoding
 	{
 		return $self->{'file-encoding'};
 	}
+}
+
+=head2 filename
+
+Return the filename of the file which is currently process by the slackget10::File instance.
+
+	print $file->filename
+
+=cut
+
+sub filename
+{
+	return $_[0]->{FILENAME} ;
 }
 
 =head1 AUTHOR

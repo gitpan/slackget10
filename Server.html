@@ -1,0 +1,301 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::Server - A class to represent a server from the servers.xml file.</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#constructor">CONSTRUCTOR</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#setvalue">setValue</a></li>
+		<li><a href="#getvalue">getValue</a></li>
+		<li><a href="#fill_object_from_xml">fill_object_from_xml</a></li>
+		<li><a href="#_fill_fast_host_section__private_">_fill_fast_host_section [PRIVATE]</a></li>
+		<li><a href="#_fill_slow_host_section__private_">_fill_slow_host_section [PRIVATE]</a></li>
+		<li><a href="#next_host">next_host</a></li>
+		<li><a href="#print_info">print_info</a></li>
+		<li><a href="#to_string">to_string</a></li>
+	</ul>
+
+	<li><a href="#accessors">ACCESSORS</a></li>
+	<ul>
+
+		<li><a href="#host">host</a></li>
+		<li><a href="#description">description</a></li>
+		<li><a href="#url">url</a></li>
+		<li><a href="#shortname">shortname</a></li>
+		<li><a href="#set_fast_servers_array">set_fast_servers_array</a></li>
+	</ul>
+
+	<li><a href="#formatted_output">FORMATTED OUTPUT</a></li>
+	<ul>
+
+		<li><a href="#to_xml">to_XML</a></li>
+		<li><a href="#to_html">to_HTML</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::Server - A class to represent a server from the servers.xml file.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>Version 1.0.0</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This class is used by slack-get to represent a server store in the servers.xml file. In this class (and in the related ServerList), the word ``server'' is used to describe an update source, a server entity of the servers.xml file. This word is not use to describe a traditionnal TCP/IP server. A slackget10::Server object can contain many TCP/IP server, this allow it to switch when a FTP or HTTP host doesn't response.</p>
+<pre>
+    use slackget10::Server;</pre>
+<pre>
+    my $server = slackget10::Server-&gt;new('slackware');
+    my $xml = XML::Simple::XMLin($servers_file,,KeyAttr =&gt; {'server' =&gt; 'id'});
+    $server-&gt;fill_object_from_xml($xml-&gt;{'slackware'});
+    $server-&gt;setValue('description','The official Slackware web site');</pre>
+<p>This class' usage is mostly the same that the slackget10::Package one. There is one big difference with the package class : you must use the accessors for setting the fast and slow servers list.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="constructor">CONSTRUCTOR</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>The constructor require the following argument :</p>
+<pre>
+        - an id (stricly needed)</pre>
+<p>Additionnaly you can pass the followings :</p>
+<pre>
+        description =&gt; a string which describe the mirror
+        web-link =&gt; a web site URL for the mirror.
+        update-repository =&gt; A hash reference build on the model of the servers.xml file. For example for the faster mirror (the one you want you use for this Server object) :
+        
+        my $server = slackget10::Server-&gt;new('slackware','update-repository' =&gt; {faster =&gt; <a href="http://ftp.belnet.be/packages/slackware/slackware-10.1/">http://ftp.belnet.be/packages/slackware/slackware-10.1/</a>});</pre>
+<p>Some examples:</p>
+<pre>
+        # the simpliest and recommended way
+        my $server = slackget10::Server-&gt;new('slackware'); 
+        $server-&gt;fill_object_from_xml($xml_simple_hashref);
+        
+        or 
+        
+        # The harder and realy not recommended unless you know what you are doing.
+        
+        my $server = slackget10::Server-&gt;new('slackware',
+                'description'=&gt;'The official Slackware web site',
+                'web-link' =&gt; '<a href="http://www.slackware.com/">http://www.slackware.com/</a>',
+                'update-repository' =&gt; {faster =&gt; '<a href="http://ftp.belnet.be/packages/slackware/slackware-10.1/">http://ftp.belnet.be/packages/slackware/slackware-10.1/</a>'}
+        ); 
+=cut</pre>
+<p>sub new
+{
+	my ($class,$id,%args) = @_ ;
+	return undef unless(defined($id));
+	my $self={};
+	$self-&gt;{ID} = $id ;
+	$self-&gt;{DATA} = {%args};
+	$self-&gt;{DATA}-&gt;{hosts}-&gt;{old} = [] ;
+	bless($self,$class);
+</p>
+<pre>
+
+        return $self;
+}</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>
+</p>
+<h2><a name="setvalue">setValue</a></h2>
+<p>Set the value of a named key to the value passed in argument.</p>
+<pre>
+        $package-&gt;setValue($key,$value);</pre>
+<p>
+</p>
+<h2><a name="getvalue">getValue</a></h2>
+<p>Return the value of a key :</p>
+<pre>
+        $string = $server-&gt;getValue($key);</pre>
+<p>
+</p>
+<h2><a name="fill_object_from_xml">fill_object_from_xml</a></h2>
+<p>Fill the data section of the slackget10::Server object with information from a servers.xml section.</p>
+<pre>
+        $server-&gt;fill_object_from_xml($xml-&gt;{'slackware'});</pre>
+<p>
+</p>
+<h2><a name="_fill_fast_host_section__private_">_fill_fast_host_section [PRIVATE]</a></h2>
+<p>fill the DATA section of the object (sub-section fast host), with a part of the XML tree of a servers.xml file.</p>
+<p>In normal use you don't have to use this method. In all case prefer pass all required argument to the constructor, and call the <code>fill_object_from_xml()</code> method.</p>
+<pre>
+        $self-&gt;_fill_fast_host_section($xml-&gt;{'update-repository'}-&gt;{fast});</pre>
+<p>
+</p>
+<h2><a name="_fill_slow_host_section__private_">_fill_slow_host_section [PRIVATE]</a></h2>
+<p>fill the DATA section of the object (sub-section slow host), with a part of the XML tree of a servers.xml file.</p>
+<p>In normal use you don't have to use this method. In all case prefer pass all required argument to the constructor, and call the <code>fill_object_from_xml()</code> method.</p>
+<pre>
+        $self-&gt;_fill_slow_host_section($xml-&gt;{'update-repository'}-&gt;{slow});</pre>
+<p>
+</p>
+<h2><a name="next_host">next_host</a></h2>
+<p>This method have 3 functionnalities : return the next fastest host, set it as the current host, and add the old host to the old hosts list.</p>
+<pre>
+        my $host = $server-&gt;next_host ;</pre>
+<p>return undef if no new host is found
+=cut</p>
+<p>sub next_host
+{
+	my $self = shift;
+	push @{$self-&gt;{DATA}-&gt;{hosts}-&gt;{old}}, $self-&gt;host;
+	$self-&gt;{DATA}-&gt;{host} = undef ;
+	if(defined(my $host = shift(@{$self-&gt;{DATA}-&gt;{hosts}-&gt;{fast}})))
+	{
+		$self-&gt;{DATA}-&gt;{host} = $host ;
+	}
+	else
+	{
+		warn ``[slackget10::Server] no more host in the 'fast' category for update source '$self-&gt;{ID}'\n'';
+		if(defined(my $host = shift(@{$self-&gt;{DATA}-&gt;{hosts}-&gt;{slow}})))
+		{
+			$self-&gt;{DATA}-&gt;{host} = $host ;
+		}
+		else
+		{
+			warn ``[slackget10::Server] no more host in the 'slow' category for update source '$self-&gt;{ID}'\n'';
+			return undef;
+		}
+	}
+	return $self-&gt;host ;
+}</p>
+<p>
+</p>
+<h2><a name="print_info">print_info</a></h2>
+<p>This method is used to print the content of the current Server object.</p>
+<pre>
+        $server-&gt;print_info ;</pre>
+<p>
+</p>
+<h2><a name="to_string">to_string</a></h2>
+<p>return the same information that the <code>print_info()</code> method as a string.</p>
+<pre>
+        my $string = $server-&gt;to_string ;</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="accessors">ACCESSORS</a></h1>
+<p>Some accessors for the current object/</p>
+<p>
+</p>
+<h2><a name="host">host</a></h2>
+<p>return the current host :</p>
+<pre>
+        my $host = $server-&gt;host</pre>
+<p>
+</p>
+<h2><a name="description">description</a></h2>
+<p>return the description of the server.</p>
+<pre>
+        my $descr = $server-&gt;description ;</pre>
+<p>
+</p>
+<h2><a name="url">url</a></h2>
+<p>return the URL of the website for the server.</p>
+<pre>
+        system(&quot;$config-&gt;{common}-&gt;{'default-browser'} $server-&gt;url &amp;&quot;);</pre>
+<p>
+</p>
+<h2><a name="shortname">shortname</a></h2>
+<p>Return the shortname of the server. The shortname is the name of the id attribute of the server tag in servers.xml =&gt; &lt;server id=``the_shortname''&gt;</p>
+<pre>
+        my $id = $server-&gt;shortname ;</pre>
+<p>
+</p>
+<h2><a name="set_fast_servers_array">set_fast_servers_array</a></h2>
+<p>...not yet implemented...</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="formatted_output">FORMATTED OUTPUT</a></h1>
+<p>Different methods to properly output a server.</p>
+<p>
+</p>
+<h2><a name="to_xml">to_XML</a></h2>
+<p>return the server info as an XML encoded string.</p>
+<pre>
+        $xml = $server-&gt;to_XML();</pre>
+<p>
+</p>
+<h2><a name="to_html">to_HTML</a></h2>
+<p>return the server info as an HTML encoded string.</p>
+<pre>
+        $xml = $server-&gt;to_HTML();</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Please report any bugs or feature requests to
+<code>bug-slackget10-networking@rt.cpan.org</code>, or through the web interface at
+<a href="http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10">http://rt.cpan.org/NoAuth/ReportBug.html</a>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.</p>
+<p>This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

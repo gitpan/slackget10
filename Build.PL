@@ -16,7 +16,10 @@ my $builder = Module::Build->new(
 	'Time::HiRes' => '>= 1.66',
 	'HTTP::Status' => '>= 1.28',
 	'File::Copy' => '>= 2.08',
-	'Data::Dumper' => '>= 2.121_02'
+	'Data::Dumper' => '>= 2.121_02',
+	'GnuPG'  => 0,
+	'Proc::Daemon' => 0,
+	'Getopt::Long' => 0
     },
     recommends => {
     	Qt => '3.008'

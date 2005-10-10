@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::Network::Connection - A wrapper for network operation in slack-get</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<ul>
+
+		<li><a href="#some_words_about_subclass">Some words about subclass</a></li>
+	</ul>
+
+	<li><a href="#constructor">CONSTRUCTOR</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#is_url">is_url</a></li>
+		<li><a href="#parse_url">parse_url</a></li>
+		<li><a href="#strip_slash">strip_slash</a></li>
+		<li><a href="#debug_show_data_section">DEBUG_show_data_section</a></li>
+	</ul>
+
+	<li><a href="#accessors">ACCESSORS</a></li>
+	<ul>
+
+		<li><a href="#protocol">protocol</a></li>
+		<li><a href="#host">host</a></li>
+		<li><a href="#file">file</a></li>
+		<li><a href="#files">files</a></li>
+		<li><a href="#path">path</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::Network::Connection - A wrapper for network operation in slack-get</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>Version 1.0.0</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This class is anoter wrapper for slack-get. It will encapsulate all nework operation. This class can chang a lot before the release and it may be rename in slackget10::NetworkConnection.</p>
+<p>
+</p>
+<h2><a name="some_words_about_subclass">Some words about subclass</a></h2>
+<p>This class is a wrapper for subclass like slackget10::Network::Connection::HTTP or slackget10::Network::Connection::FTP. You can add a class for a new protocol (and update this constructor) very simply but you must know that all class the slackget10::Network::Connection::* must have the following methods (the format is : &lt;method name(&lt;arguments&gt;)&gt; : &lt;returned value&gt;, parmaeters between [] are optionnals):</p>
+<pre>
+        - test_server : a float (the server response time)
+        - fetch_file([$remote_filename],[$local_file]) : a boolean (1 or 0). NOTE: this method store the fetched file on the hard disk. If $local_file is not defined, fetch() must store the file in &lt;update-directory&gt;.
+        - fetch_all : a boolean (1 or 0)
+        - get_file([$remote_filename]) : the file content</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="constructor">CONSTRUCTOR</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<pre>
+        use slackget10::Network::Connection;
+        
+        (1)
+        my $connection = slackget10::Network::Connection-&gt;new('<a href="http://www.nymphomatic.org/mirror/linuxpackages/Slackware-10.1/">http://www.nymphomatic.org/mirror/linuxpackages/Slackware-10.1/</a>');
+        my $file = $connection-&gt;get_file('FILELIST.TXT');
+        
+        or :
+        
+        (2)
+        my $connection = slackget10::Network::Connection-&gt;new('<a href="http://www.nymphomatic.org/mirror/linuxpackages/Slackware-10.1/FILELIST.TXT">http://www.nymphomatic.org/mirror/linuxpackages/Slackware-10.1/FILELIST.TXT</a>');
+        my $file = $connection-&gt;get_file;
+        
+        or :
+        
+        (3)
+        my $connection = slackget10::Network::Connection-&gt;new(
+                        host =&gt; '<a href="http://www.nymphomatic.org">http://www.nymphomatic.org</a>',
+                        path =&gt; '/mirror/linuxpackages/Slackware-10.1/',
+                        files =&gt; ['FILELIST.TXT','PACKAGES.TXT','CHECKSUMS.md5'], # Be carefull that it's the files parameter not file. file is the current working file.
+                        config =&gt; $config,
+                        mode =&gt; 'normal'
+        );
+        $connection-&gt;fetch_all or die &quot;An error occur during the download\n&quot;;
+        
+        or (the recommended way) :
+        
+        (4)
+        my $connection = slackget10::Network::Connection-&gt;new(
+                        host =&gt; '<a href="http://www.nymphomatic.org">http://www.nymphomatic.org</a>',
+                        path =&gt; '/mirror/linuxpackages/Slackware-10.1/',
+                        config =&gt; $config,
+                        mode =&gt; 'normal'
+        );
+        my $file = $connection-&gt;get_file('FILELIST.TXT') or die &quot;[ERROR] unable to download FILELIST.TXT\n&quot;;
+        
+        or :
+        
+        my $status = $connection-&gt;fetch('FILELIST.TXT',&quot;$config-&gt;{common}-&gt;{'update-directory'}/&quot;.$server-&gt;shortname.&quot;/cache/FILELIST.TXT&quot;);
+        ie &quot;[ERROR] unable to download FILELIST.TXT\n&quot; unless ($status);</pre>
+<p>The global way (3) is not recommended because of the lake of control on the downloaded file. For example, if there is only 1 download which fail, fetch_all will return undef and you don't know which download have failed.</p>
+<p>The simpliest ways (1) and (2) are not recommended because you didn't give a slackget10::Config object to the connection. So you have to manage by yourself all tasks needed to a proper work (like charset encoding, moving file to proper destination, etc.). In this case don't forget that the download methods file save file in the current directory.</p>
+<p>The recommended way is to give to the constructor the following arguments :</p>
+<pre>
+        host : the host (with the protocol, do not provide 'ftp.lip6.fr' provide <a href="ftp://ftp.lip6.fr">ftp://ftp.lip6.fr</a>. The protocol will be automatically extract)
+        path : the path to the working directory on the server (Ex: '/pub/linux/distributions/slackware/slackware-10.1/'). Don't provide a 'file' argument.
+        config : the slackget10::Config object of the application
+        mode : a mode between 'normal' or 'secure'. This is only when you attempt to connect to a daemon (front-end/daemon or daemon/daemon connection). 'secure' use SSL connection.</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>
+</p>
+<h2><a name="is_url">is_url</a></h2>
+<p>Take a string as argument and return TRUE (1) if $string is an http or ftp URL and FALSE (0) else</p>
+<pre>
+        print &quot;$string is a valid URL\n&quot; if($connection-&gt;is_url($string)) ;</pre>
+<p>
+</p>
+<h2><a name="parse_url">parse_url</a></h2>
+<p>extract the following informations from $url :</p>
+<pre>
+        - the protocol 
+        - the server
+        - the file (with its total path)</pre>
+<p>For example :</p>
+<pre>
+        $connection-&gt;pars_url(&quot;<a href="ftp://ftp.lip6.fr/pub/linux/distributions/slackware/slackware-current/slackware/n/dhcp-3.0.1-i486-1.tgz&quot">ftp://ftp.lip6.fr/pub/linux/distributions/slackware/slackware-current/slackware/n/dhcp-3.0.1-i486-1.tgz&quot</a>;);</pre>
+<p>Will extract :</p>
+<pre>
+        - protocol = ftp
+        - host = ftp.lip6.fr
+        - file = /pub/linux/distributions/slackware/slackware-current/slackware/n/dhcp-3.0.1-i486-1.tgz</pre>
+<p>This method return TRUE (1) if all goes well, else return FALSE (0)</p>
+<p>
+</p>
+<h2><a name="strip_slash">strip_slash</a></h2>
+<p>Remove extra slash (/) in the URL and return the URL.</p>
+<pre>
+        my $url = $connection-&gt;strip_slash('<a href="http://ftp.infinityperl.org//slackware-repository////CHECKSUMS.md5">http://ftp.infinityperl.org//slackware-repository////CHECKSUMS.md5</a>') ;</pre>
+<p>
+</p>
+<h2><a name="debug_show_data_section">DEBUG_show_data_section</a></h2>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="accessors">ACCESSORS</a></h1>
+<p>The common accessors are :</p>
+<p>
+</p>
+<h2><a name="protocol">protocol</a></h2>
+<p>return the protocol of the current Connection object as a string :</p>
+<pre>
+        my $proto = $connection-&gt;protocol ;</pre>
+<p>
+</p>
+<h2><a name="host">host</a></h2>
+<p>return the host of the current Connection object as a string :</p>
+<pre>
+        my $host = $connection-&gt;host ;</pre>
+<p>
+</p>
+<h2><a name="file">file</a></h2>
+<p>return the file of the current Connection object as a string :</p>
+<pre>
+        my $file = $connection-&gt;file ;</pre>
+<p>
+</p>
+<h2><a name="files">files</a></h2>
+<p>return the list of files of the current Connection object as an array reference :</p>
+<pre>
+        my $arrayref = $connection-&gt;files ;</pre>
+<p>
+</p>
+<h2><a name="path">path</a></h2>
+<p>return the path of the current Connection object as a string :</p>
+<pre>
+        my $path = $connection-&gt;path ;</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Please report any bugs or feature requests to
+<code>bug-slackget10-networking@rt.cpan.org</code>, or through the web interface at
+<a href="http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10">http://rt.cpan.org/NoAuth/ReportBug.html</a>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.
+
+</p>
+<p>This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

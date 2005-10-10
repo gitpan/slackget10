@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::Docs::EventDoc - A documentation which describe the network event base communication system.</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#introduction">Introduction</a></li>
+	<ul>
+
+		<li><a href="#events_callbacks">Events/Callbacks</a></li>
+		<li><a href="#ebcs_protocol">EBCS protocol</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::Docs::EventDoc - A documentation which describe the network event base communication system.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This documentation give all the programmation informations for programming with the event base communication system of slack-get 1.0.x.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>The version of this document is : 1.0.0_1</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="introduction">Introduction</a></h1>
+<p>This system (for convenience we will call it EBCS in the rest of this document) is mainly usefull in network communication, but all communications are networked in slack-get 1.0.x branch :-)</p>
+<p>The communication via EBCS is implemented in communications between slack-getd, slack-browser and slack-get. Eventually, if other binary came in the distribution (and if they have to communicate with those 3 programs) they will use EBCS.</p>
+<p>The principle of EBCS is simple : programs emit a network message, this one is handle by the <a href="/doc//slackget10/Network.html">the slackget10::Network manpage</a> class, and this one dispatch message to treatment callbacks. There is default handler in <a href="/doc//slackget10/Network.html">the slackget10::Network manpage</a> but there are not really usefull.</p>
+<p>Before starting the core documentation, please note that the version number of this document is build on the this scheme : &lt;slack-get version number&gt;_&lt;version of this document&gt;. This means that the number after the underscore ('_') is the version of this document for a specific slack-get release.</p>
+<p>
+</p>
+<h2><a name="events_callbacks">Events/Callbacks</a></h2>
+<p>In this parapgrah we will discuss about available network messages (called ``events'' here) and about callbacks. Network messages in EBCS always respect this format :</p>
+<pre>
+        &lt;event&gt;:[&lt;extra arguments to this event&gt;:]&lt;message&gt;</pre>
+<p>In all messages &lt;event&gt; and &lt;message&gt; are mandatory. There is currently 5 events :</p>
+<pre>
+        * success
+        * info
+        * error
+        * unknown_said
+        * choice</pre>
+<p>Thoses messages are used in the followings contexts :</p>
+<p><code>success</code> : A command finished in success state.</p>
+<p><code>info</code> : A message is emit by a program but this is not an error, a success and not a choice. There is 3 info level.</p>
+<p><code>error</code> : An error occured and the program report it. This is not the worst case because if you can receive an error message this mean that the sender program is always able to transmit it !</p>
+<p><code>unknown_said</code> : A message is emit by a client and the server cannot handle it. So it report it as an unknown command. This allow differents programs (which may have different versions) to adapt their communication protocol.</p>
+<p><code>choice</code> : This message is send when a choice between 2 or more packages is available.</p>
+<p>For all message, there is a hook nammed ``on_&lt;event&gt;''. All hooks can be connected to a callback (via a CODEREF), please read <a href="/doc//slackget10/Network.html">the slackget10::Network manpage</a> for more information on how to implement a callback and register it.</p>
+<p>Here is a list of the correspondence between events, hooks and callbacks (format is : &lt;event&gt; : &lt;hook format&gt; : callback description):</p>
+<p><code>success</code> : on_success : callback may take a string wich describe the success state.</p>
+<p><code>info</code> : on_info : callback may take 2 parameters : the info level (integer between 1 and 3 included), and a string (wich describe the info message)</p>
+<p><code>error</code> : on_error : callback may take a string which is the error message. For the moment I have no use of interaction here. Indeed if a choice is needed we have the on_choice hook and if the message is not an error we have the on_info hook.</p>
+<p><code>unknown_said</code> : on_unknown : The callback need to take a string as argument. The string passed is the full message wich have been not understand by the remote program.</p>
+<p><code>choice</code> : on_choice : This method must take a string as argument. The string is an XML serialized slackget10::PackageList (<a href="/doc//slackget10/PackageList.html">the slackget10::PackageList manpage</a>). This callback must take care of the response (i.e must send the response to the asker).</p>
+<p>
+</p>
+<h2><a name="ebcs_protocol">EBCS protocol</a></h2>
+<p>Protocol message are given here for information :</p>
+<p><code>success message</code> :</p>
+<pre>
+        success:&lt;message&gt;</pre>
+<p><code>info message</code> :</p>
+<pre>
+        info:&lt;level&gt;:&lt;message&gt;</pre>
+<p><code>error message</code> :</p>
+<pre>
+        error:&lt;message&gt;</pre>
+<p><code>choice message</code> :</p>
+<pre>
+        choice:&lt;XML serialized slackget10::PackageList&gt;</pre>
+<p><code>unknow message</code> :</p>
+<pre>
+        unknown_said:&lt;complete un-understand message&gt;</pre>
+<p>All thoses message are handles by a private method of the slackget10::Network class ( <code>_handle_protocol()</code> ), so you only have to care about callbacks.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><em>slackget10</em>, <a href="http://www.gnu.org/copyleft/fdl.html">http://www.gnu.org/copyleft/fdl.html</a>, <a href="/doc//slackget10/Network.html">the slackget10::Network manpage</a></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.</p>
+<p>This documentation is a free documentation; you can redistribute it and/or modify it
+under the terms of the GNU/FDL License..</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

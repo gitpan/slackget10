@@ -4,6 +4,8 @@ use warnings;
 use strict;
 
 require slackget10::File ;
+require XML::Simple;
+$XML::Simple::PREFERRED_PARSER='XML::Parser' ;
 
 =head1 NAME
 
@@ -15,7 +17,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '0.6.1';
 
 =head1 SYNOPSIS
 
@@ -66,17 +68,32 @@ Return undef if something goes wrong, 1 else.
 sub Load {
 	my ($self,$file) = @_ ;
 	return undef unless(defined($file) && -e $file);
-	my $local = new slackget10::File ( $file ) ;
-	foreach ($local->Get_file()){
-		chomp;
-		next if($_=~ /^\s*#/ or $_=~ /^\s*$/);
-		if($_=~ /^([^=\s]*)\s*=\s*(.*)/)
-		{
-# 			print "Setting token '$1' with message '$2'\n";
-			$self->{DATA}->{$1} = $2;
-		}
-	}
+	print "[slackget10::Local] loading file \"$file\"\n";
+	my $data = XML::Simple::XMLin( $file , KeyAttr=> {'message' => 'id'}) ;
+	$self->{DATA} = $data->{'message'} ;
+	$self->{LP_NAME} = $data->{name} ;
 	return 1;
+}
+
+=head2 get_indexes
+
+Return the list of all index of the current loaded local. Dependending of the context, this method return an array or an arrayref.
+
+	# Return a list
+	foreach ($local->get_indexes) {
+		print "$_ : ",$local->Get($_),"\n";
+	}
+	
+	# Return an arrayref
+	my $index_list = $local->get_indexes ;
+
+=cut
+
+sub get_indexes
+{
+	my $self = shift;
+	my @a = keys( %{$self->{DATA} });
+	return wantarray ? @a : \@a;
 }
 
 =head2 Get
@@ -92,7 +109,41 @@ Return undef if the token doesn't exist.
 sub Get {
 	my ($self,$token) = @_ ;
 # 	return undef unless(defined($token));
-	return $self->{DATA}->{$token};
+	return $self->{DATA}->{$token}->{'content'};
+}
+
+sub to_XML
+{
+	my $self = shift;
+	my @msg = sort {$a cmp $b} keys(%{ $self->{DATA} });
+	my $xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n<local name=\"$self->{LP_NAME}\">\n";
+	foreach my $token (@msg)
+	{
+		unless(defined( $self->{DATA}->{$token}->{content} ))
+		{
+			print "token \"$token\" have no associate value.\n";
+			next;
+		}
+		
+		$xml .= "\t<message id=\"$token\"><![CDATA[$self->{DATA}->{$token}->{content}]]></message>\n";
+	}
+	$xml .= "</local>";
+}
+
+=head2 name
+
+Accessor for the name pf the Local (langpack).
+
+	print "The current langpack name is : ", $local->name,"\n";
+	$local->name('Japanese'); # Set the name of the langpack to 'Japanese'.
+
+=cut
+
+sub name
+{
+	my $self = shift;
+	my $name = shift;
+	return $name ? ($self->{LP_NAME}=$name) : $self->{LP_NAME};
 }
 
 =head1 AUTHOR

@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::PackageList - This class is a container of slackget10::Package object</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#constructor">CONSTRUCTOR</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#fill_from_xml">fill_from_xml</a></li>
+		<li><a href="#sort">Sort</a></li>
+		<li><a href="#index_list">index_list</a></li>
+		<li><a href="#get_indexed">get_indexed</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::PackageList - This class is a container of slackget10::Package object</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>Version 1.0.0</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This class is a container of slackget10::Package object, and allow you to perform some operations on this packages list. As the Package class, it is a slack-get's internal representation of data.</p>
+<pre>
+    use slackget10::PackageList;</pre>
+<pre>
+    my $packagelist = slackget10::PackageList-&gt;new();
+    $packagelist-&gt;add($package);
+    $packagelist-&gt;get($index);
+    my $package = $packagelist-&gt;Shift();</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="constructor">CONSTRUCTOR</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>This class constructor don't take any parameters to works properly, but you can eventually disable the root tag &lt;packagelist&gt; by using 'no-root-tag' =&gt; 1, and modify the default encoding (utf8) by passing an 'encoding' =&gt; &lt;your encoding&gt; parameter.</p>
+<pre>
+        my $PackageList = new slackget10::PackageList ();
+        my $PackageList = new slackget10::PackageList ('no-root-tag' =&gt; 1);</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>This class inheritate from slackget10::List (<a href="/doc//slackget10/List.html">the slackget10::List manpage</a>), so you may want read the slackget10::List documentation for the supported methods of this class.</p>
+<p>
+</p>
+<h2><a name="fill_from_xml">fill_from_xml</a></h2>
+<p>Fill the slackget10::PackageList from the XML data passed as argument.</p>
+<pre>
+        $packagelist-&gt;fill_from_xml(
+                '&lt;choice action=&quot;installpkg&quot;&gt;
+                        &lt;package id=&quot;gcc-objc-3.3.4-i486-1&quot;&gt;
+                                &lt;date hour=&quot;12:32:00&quot; day-number=&quot;12&quot; month-number=&quot;06&quot; year=&quot;2004&quot; /&gt;
+                                &lt;compressed-size&gt;1395&lt;/compressed-size&gt;
+                                &lt;location&gt;./slackware/d&lt;/location&gt;
+                                &lt;package-source&gt;slackware&lt;/package-source&gt;
+                                &lt;version&gt;3.3.4&lt;/version&gt;
+                                &lt;name&gt;gcc-objc&lt;/name&gt;
+                                &lt;uncompressed-size&gt;3250&lt;/uncompressed-size&gt;
+                                &lt;description&gt;gcc-objc (Objective-C support for GCC)
+                                        Objective-C support for the GNU Compiler Collection.
+                                        This package contains those parts of the compiler collection needed to
+                                compile code written in Objective-C.  Objective-C was originally
+                                developed to add object-oriented extensions to the C language, and is
+                                best known as the native language of the NeXT computer.
+                
+                                &lt;/description&gt;
+                                &lt;signature-checksum&gt;565a10ce130b4287acf188a6c303a1a4&lt;/signature-checksum&gt;
+                                &lt;checksum&gt;23bae31e3ffde5e7f44617bbdc7eb860&lt;/checksum&gt;
+                                &lt;architecture&gt;i486&lt;/architecture&gt;
+                                &lt;package-location&gt;slackware/d/&lt;/package-location&gt;
+                                &lt;package-version&gt;1&lt;/package-version&gt;
+                                &lt;referer&gt;gcc-objc&lt;/referer&gt;
+                        &lt;/package&gt;
+                
+                        &lt;package id=&quot;gcc-objc-3.4.3-i486-1&quot;&gt;
+                                &lt;date hour=&quot;18:24:00&quot; day-number=&quot;21&quot; month-number=&quot;12&quot; year=&quot;2004&quot; /&gt;
+                                &lt;compressed-size&gt;1589&lt;/compressed-size&gt;
+                                &lt;package-source&gt;slackware&lt;/package-source&gt;
+                                &lt;version&gt;3.4.3&lt;/version&gt;
+                                &lt;name&gt;gcc-objc&lt;/name&gt;
+                                &lt;signature-checksum&gt;1027468ed0d63fcdd584f74d2696bf99&lt;/signature-checksum&gt;
+                                &lt;architecture&gt;i486&lt;/architecture&gt;
+                                &lt;checksum&gt;5e659a567d944d6824f423d65e4f940f&lt;/checksum&gt;
+                                &lt;package-location&gt;testing/packages/gcc-3.4.3/&lt;/package-location&gt;
+                                &lt;package-version&gt;1&lt;/package-version&gt;
+                                &lt;referer&gt;gcc-objc&lt;/referer&gt;
+                        &lt;/package&gt;
+                &lt;/choice&gt;'
+        );</pre>
+<p>
+</p>
+<h2><a name="sort">Sort</a></h2>
+<p>Apply the Perl built-in function <code>sort()</code> on the PackageList. This method return nothing.</p>
+<pre>
+        $list-&gt;Sort() ;</pre>
+<p>
+</p>
+<h2><a name="index_list">index_list</a></h2>
+<p>Create an index on the PackageList. This index don't take many memory but speed a lot search, especially when you already have the package id !</p>
+<p>The index is build with the Package ID.</p>
+<p>
+</p>
+<h2><a name="get_indexed">get_indexed</a></h2>
+<p>Return a package, as well as <code>Get()</code> do but use the index to return it quickly. You must provide a package ID to this method.</p>
+<pre>
+        my $pkg = $list-&gt;get_indexed($qlistviewitem-&gt;text(5)) ;</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Please report any bugs or feature requests to
+<code>bug-slackget10-PackageList@rt.cpan.org</code>, or through the web interface at
+<a href="http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10">http://rt.cpan.org/NoAuth/ReportBug.html</a>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.</p>
+<p>This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

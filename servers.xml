@@ -149,12 +149,19 @@
 	</server>
 	<server id="infinityperl">
 		<update-repository>
-			<faster>http://perso.wanadoo.fr/rafinc/slackware-repository/</faster>
+			<faster>http://arnaud.slack.dupuis.free.fr/slackware-repository/</faster>
 			<slow>
 				<li>http://ftp.infinityperl.org/slackware-repository/</li>
 			</slow>
 		</update-repository>
 		<description>An update server specialized in Slackware packages of Perl modules.</description>
 		<web-link>http://slackget.infinityperl.org/</web-link>
+	</server>
+	<server id="audioslack">
+		<update-repository>
+			<faster>http://www.audioslack.com/packages/10.1/</faster>
+		</update-repository>
+		<description>Audioslack is where you will find all your favourite Linux audio applications pre-packaged and ready to go for the Slackware Linux Distribution.</description>
+		<web-link>http://www.audioslack.com/</web-link>
 	</server>
 </serverlist>

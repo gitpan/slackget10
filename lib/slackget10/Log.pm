@@ -27,7 +27,7 @@ our @ISA = qw(Exporter);
 # 	
 # );
 
-our $VERSION = '0.3';
+our $VERSION = '0.3.6';
 
 sub new
 {

@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::PkgTools - A wrapper for the pkgtools action</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#constructor">CONSTRUCTOR</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#install">install</a></li>
+		<li><a href="#upgrade">upgrade</a></li>
+		<li><a href="#remove">remove</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::PkgTools - A wrapper for the pkgtools action(installpkg, upgradepkg and removepkg)</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>Version 1.0.0</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This class is anoter wrapper for slack-get. It will encapsulate the pkgtools system call.</p>
+<pre>
+    use slackget10::PkgTools;</pre>
+<pre>
+    my $pkgtool = slackget10::PkgTools-&gt;new($config);
+    $pkgtool-&gt;install($package1);
+    $pkgtool-&gt;remove($package_list);
+    foreach (@{$packagelist-&gt;get_all})
+    {
+        print &quot;Status for &quot;,$_-&gt;name,&quot; : &quot;,$_-&gt;status()-&gt;to_string,&quot;\n&quot;;
+    }
+    $pkgtool-&gt;upgrade($package_list);</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="constructor">CONSTRUCTOR</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>Take a slackget10::Config object as argument :</p>
+<pre>
+        my $pkgtool = new slackget10::PkgTool ($config);</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>slackget10::PkgTools methods used the followings status :</p>
+<pre>
+                0 : Package have been installed successfully.
+                1 : Package have been upgraded successfully.
+                2 : Package have been removed successfully.
+                3 : Can't install package : new package not found in the cache.
+                4 : Can't remove package : no such package installed.
+                5 : Can't upgrade package : new package not found in the cache.
+                6 : Can't install package : an error occured during &lt;installpkg-binary /&gt; system call
+                7 : Can't remove package : an error occured during &lt;removepkg-binary /&gt; system call
+                8 : Can't upgrade package : an error occured during &lt;upgradepkg-binary /&gt; system call
+                9 : Package scheduled for install on next reboot.
+                10 : An error occured in the slackget10::PkgTool class (during installpkg, upgradepkg or removepkg) but the class is unable to understand the error.</pre>
+<p>
+</p>
+<h2><a name="install">install</a></h2>
+<p>Take a single slackget10::Package object or a single slackget10::PackageList as argument and call installpkg on all this packages.
+Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package, set a status.</p>
+<pre>
+        $pkgtool-&gt;install($package_list);</pre>
+<p>
+</p>
+<h2><a name="upgrade">upgrade</a></h2>
+<p>Take a single slackget10::Package object or a single slackget10::PackageList as argument and call upgradepkg on all this packages.
+Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package, set a status.</p>
+<pre>
+        $pkgtool-&gt;install($package_list) ;</pre>
+<p>
+</p>
+<h2><a name="remove">remove</a></h2>
+<p>Take a single slackget10::Package object or a single slackget10::PackageList as argument and call installpkg on all this packages.
+Return 1 or undef if an error occured. But methods from the slackget10::PkgTools class don't return on the first error, it will try to install all packages. Additionnally, for each package, set a status.</p>
+<pre>
+        $pkgtool-&gt;install($package_list);</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Please report any bugs or feature requests to
+<code>bug-slackget10-networking@rt.cpan.org</code>, or through the web interface at
+<a href="http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10">http://rt.cpan.org/NoAuth/ReportBug.html</a>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.
+
+</p>
+<p>This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

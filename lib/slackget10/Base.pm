@@ -23,6 +23,7 @@ Version 1.0.0
 =cut
 
 our $VERSION = '1.0.0';
+$XML::Simple::PREFERRED_PARSER='XML::Parser' ;
 
 =head1 SYNOPSIS
 
@@ -140,7 +141,7 @@ sub compil_packages_directory
 # 	print "[DEBUG] number of entry in files array : ",scalar(@files),"\n";
 # 	print "[DEBUG] entry in \@files :\n",join "\n",@files,"\n";
 	my $ref;
-	my $packagelist = new slackget10::PackageList ;
+	my $packagelist = new slackget10::PackageList('encoding'=>$self->{CONF}->{common}->{'file-encoding'}) ;
 	foreach (@files)
 	{
 # 		print "[DEBUG] in slackget10::Base, method compil_package_directory file-encoding=$self->{CONF}->{common}->{'file-encoding'}\n";
@@ -262,12 +263,15 @@ This method is design for reading a packages.xml file.
 sub load_packages_list_from_xml_file {
 	my ($self,$file) = @_;
 	my $ref = {};
-	
+	my $start = time();
+	$|++ ;
+	print "[DEBUG] Going to parse '$file'\n";
+	$XML::Simple::PREFERRED_PARSER='XML::Parser' ;
 	my $xml_in = XML::Simple::XMLin($file,KeyAttr => {'package' => 'id'});
+	print "[DEBUG] '$file' correctly parsed in ", time() - $start," sec.\n" ;
 	foreach my $group (keys(%{$xml_in})){
 		my $package_list = new slackget10::PackageList ;
 		foreach my $pack_name (keys(%{$xml_in->{$group}->{'package'}})){
-			#TODO: finir..quoi j'en sais rien...Par contre je sais pas si c'est une bonne idée de séparer les PackageList.
 			my $package = new slackget10::Package ($pack_name);
 			foreach my $key (keys(%{$xml_in->{$group}->{'package'}->{$pack_name}})){
 				if($key eq 'date')

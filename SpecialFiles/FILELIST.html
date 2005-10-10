@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>slackget10::SpecialFiles::FILELIST - An interface for the special file FILELIST.TXT</title>
+<link rel="stylesheet" href="http://search.cpan.org/s/style.css" type="text/css" />
+<link rev="made" href="mailto:root@midas.slackware.lan" />
+</head>
+
+<body>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#version">VERSION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#warnings">WARNINGS</a></li>
+	<li><a href="#constustor">CONSTUSTOR</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#compile">compile</a></li>
+		<li><a href="#get_file_list">get_file_list</a></li>
+		<li><a href="#get_package">get_package</a></li>
+		<li><a href="#get_result">get_result</a></li>
+		<li><a href="#get_date">get_date</a></li>
+		<li><a href="#to_xml">to_XML</a></li>
+		<li><a href="#meta_to_xml">meta_to_XML</a></li>
+	</ul>
+
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#copyright___license">COPYRIGHT &amp; LICENSE</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>slackget10::SpecialFiles::FILELIST - An interface for the special file FILELIST.TXT</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>Version 1.0.0</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This class contain all methods for the treatment of the FILELIST.TXT file</p>
+<pre>
+    use slackget10::SpecialFiles::FILELIST;</pre>
+<pre>
+    my $spec_file = slackget10::SpecialFiles::FILELIST-&gt;new('FILELIST.TXT');
+    $spec_file-&gt;compil();
+    my $ref = $spec_file-&gt;get_file_list() ;</pre>
+<p>This class care about package-namespace, which is the root set of a package (slackware, extra or pasture for packages from Slackware)</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="warnings">WARNINGS</a></h1>
+<p>All classes from the slackget10::SpecialFiles:: namespace need the followings methods :</p>
+<pre>
+        - a contructor new()
+        - a method compil()
+        - a method get_result(), which one can be an alias on another method of the class.</pre>
+<p>Moreover, the <code>get_result()</code> methode need to return a hashref. Keys of this hashref are the filenames.</p>
+<p>Classes from ths namespace represent an abstraction of the special file they can manage so informations stored in the returned hashref must have a direct link with this special file.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="constustor">CONSTUSTOR</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>Take a file, a slackget10::Config object and an id name :</p>
+<pre>
+        my $spec_chk = slackget10::SpecialFiles::CHECKSUMS-&gt;new('/home/packages/FILELIST.TXT',$config,'slackware');</pre>
+<p>The constructor return undef if the file does not exist.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>
+</p>
+<h2><a name="compile">compile</a></h2>
+<p>This method take no arguments, and extract the list of couple (file/package-namespace). Those couple are store into an internal data structure.</p>
+<pre>
+        $list-&gt;compile();</pre>
+<p>
+</p>
+<h2><a name="get_file_list">get_file_list</a></h2>
+<p>Return a hashref build on this model</p>
+<pre>
+        $ref = {
+                filename =&gt; slackget10::Package
+        }</pre>
+<pre>
+        my $ref = $list-&gt;get_file_list ;</pre>
+<p>
+</p>
+<h2><a name="get_package">get_package</a></h2>
+<p>Return informations relative to a packages as a hashref.</p>
+<pre>
+        my $hashref = $list-&gt;get_package($package_name) ;</pre>
+<p>
+</p>
+<h2><a name="get_result">get_result</a></h2>
+<p>Alias for get_file_list().</p>
+<p>
+</p>
+<h2><a name="get_date">get_date</a></h2>
+<p>return a slackget10::Date object, which is the date of the FILELIST.TXT</p>
+<pre>
+        my $date = $list-&gt;get_date ;</pre>
+<p>
+</p>
+<h2><a name="to_xml">to_XML</a></h2>
+<p>return a string containing all packages name carriage return separated.</p>
+<p>WARNING: ONLY FOR DEBUG</p>
+<pre>
+        my $string = $list-&gt;to_string();</pre>
+<p>
+</p>
+<h2><a name="meta_to_xml">meta_to_XML</a></h2>
+<p>Return an XML encoded string which represent the meta informations of the FILELIST.TXT file.</p>
+<pre>
+        my $xml_string = $list-&gt;meta_to_XML ;</pre>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>DUPUIS Arnaud, <code>&lt;a.dupuis@infinityperl.org&gt;</code></p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>Please report any bugs or feature requests to
+<code>bug-slackget10-networking@rt.cpan.org</code>, or through the web interface at
+<a href="http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10">http://rt.cpan.org/NoAuth/ReportBug.html</a>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.</p>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>
+<a href="#__index__"><small>Top</small></a>
+</p>
+<hr />
+<h1><a name="copyright___license">COPYRIGHT &amp; LICENSE</a></h1>
+<p>Copyright 2005 DUPUIS Arnaud, All Rights Reserved.</p>
+<p>This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+</p>
+<p><a href="#__index__"><small>Top</small></a></p>
+
+</body>
+
+</html>

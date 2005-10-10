@@ -168,7 +168,7 @@ sub fill_object_from_package_name{
 		$self->setValue('version',$2);
 		$self->setValue('architecture',$3);
 		$self->setValue('package-version',$4);
-		$self->setValue('package-maintener',$5) if(!defined($self->getValue('package-maintener')));
+# 		$self->setValue('package-maintener',$5) if(!defined($self->getValue('package-maintener')));
 	}
 	else
 	{
@@ -232,7 +232,7 @@ sub extract_informations {
 
 =head2 clean_description
 
-remove the "<package_name>: " string in front of each line of the description. Change < to &lt; and > to &gt;. Finally remove extra tabulation (for identation).
+remove the "<package_name>: " string in front of each line of the description. Remove extra tabulation (for identation).
 
 	$package->clean_description();
 
@@ -245,9 +245,6 @@ sub clean_description{
 		$self->{PACK}->{description}=~ s/\Q$self->{PACK}->{name}:\E\s//ig;
 		$self->{PACK}->{description}=~ s/\t{4,}/\t\t\t/g;
 		$self->{PACK}->{description}=~ s/\n\s+\n/\n/g;
-		$self->{PACK}->{description}=~ s/</&lt;/g;
-		$self->{PACK}->{description}=~ s/>/&gt;/g;
-		$self->{PACK}->{description}=~ s/&/&amp;/g;
 	}
 	$self->{PACK}->{description}.="\n\t\t";
 	return 1;
@@ -277,44 +274,48 @@ sub grab_info_from_description
 	if($self->{PACK}->{description}=~ /\s*([\w\.\-]+\@[^\s]+\.[\w]+)/i){
 		$self->setValue('info-packager-mail',$1);
 	}
+	
 	if($self->{PACK}->{description}=~ /Package\s+created\s+by:\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
 		$self->setValue('info-packager-mail',$2);
 		$self->setValue('package-maintener',$1);
 	}
-	if($self->{PACK}->{description}=~ /Package\s+created\s+by\s+(.*)\s+\[([^\n\t]*)\]/i){
-		$self->setValue('info-homepage',$2);
-		$self->setValue('package-maintener',$1);
-	}
-	if($self->{PACK}->{description}=~ /Package\s+created\s+.*by\s+(.*)\s+\(([^\n\t]*)\)/i){
+	elsif($self->{PACK}->{description}=~ /Packager:\s+(.*)\s+&lt;(.*)&gt;/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	if($self->{PACK}->{description}=~ /\s*Package\s+Maintainer:\s+(.*)\s+\(([^\n\t]*)\)/i){
+	elsif($self->{PACK}->{description}=~ /Package\s+created\s+.*by\s+(.*)\s+\(([^\n\t]*)\)/i){
 		$self->setValue('package-maintener',$1);
 		$self->setValue('info-packager-mail',$2);
 	}
-	if($self->{PACK}->{description}=~ /Packaged\s+by\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
-		$self->setValue('package-maintener',$1);
-		$self->setValue('info-packager-mail',$2);
-	}
-	if ( $self->{PACK}->{description}=~ /Package created by ([^\s]+) ([^\s]+)/i)
-	{
-		$self->setValue('package-maintener',"$1 $2");
-	}
-	if ( $self->{PACK}->{description}=~ /Packaged by ([^\s]+) ([^\s]+) \((.*)\)/i)
+	elsif ( $self->{PACK}->{description}=~ /Packaged by ([^\s]+) ([^\s]+) \((.*)\)/i)
 	{
 		$self->setValue('package-maintener',"$1 $2");
 		$self->setValue('info-packager-mail',$3);
 	}
+	elsif($self->{PACK}->{description}=~ /\s*Package\s+Maintainer:\s+(.*)\s+\(([^\n\t]*)\)/i){
+		$self->setValue('package-maintener',$1);
+		$self->setValue('info-packager-mail',$2);
+	}
+	elsif($self->{PACK}->{description}=~ /Packaged\s+by\s+(.*)\s+&lt;([^\n\t]*)&gt;/i){
+		$self->setValue('package-maintener',$1);
+		$self->setValue('info-packager-mail',$2);
+	}
+	
+	if ( $self->{PACK}->{description}=~ /Package created by ([^\s]+) ([^\s]+)/i)
+	{
+		$self->setValue('package-maintener',"$1 $2");
+	}
+	
 	if($self->{PACK}->{description}=~ /Packaged\s+by:?\s+(.*)(\s+(by|for|to|on))?/i){
 		$self->setValue('package-maintener',$1);
 	}
 	if($self->{PACK}->{description}=~ /Package\s+created\s+by:?\s+([^\n\t]*)/i){
 		$self->setValue('package-maintener',$1);
 	}
-	if($self->{PACK}->{description}=~ /Packager:\s+(.*)\s+&lt;(.*)&gt;/i){
+	
+	if($self->{PACK}->{description}=~ /Package\s+created\s+by\s+(.*)\s+\[([^\n\t]*)\]/i){
+		$self->setValue('info-homepage',$2);
 		$self->setValue('package-maintener',$1);
-		$self->setValue('info-packager-mail',$2);
 	}
 	if($self->{PACK}->{description}=~ /Packager:\s+([^\n\t]*)/i){
 		$self->setValue('package-maintener',$1);
@@ -363,7 +364,7 @@ sub to_XML
 		delete($self->{PACK}->{'date'});
 	}
 	foreach (keys(%{$self->{PACK}})){
-		$xml .= "\t\t<$_>$self->{PACK}->{$_}</$_>\n" if(defined($self->{PACK}->{$_}));
+		$xml .= "\t\t<$_><![CDATA[$self->{PACK}->{$_}]]></$_>\n" if(defined($self->{PACK}->{$_}));
 	}
 	$self->{PACK}->{'package-date'}=$self->{TMP}->{'package-date'};
 	delete($self->{TMP});

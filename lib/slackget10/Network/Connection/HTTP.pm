@@ -19,7 +19,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '0.9.3';
 # our @ISA = qw( slackget10::Network::Connection ) ;
 
 =head1 SYNOPSIS

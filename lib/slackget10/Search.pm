@@ -13,11 +13,11 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '0.8.2';
 
 =head1 SYNOPSIS
 
-A class to search for packages on a slackget10::PackageList object
+A class to search for packages on a slackget10::PackageList object. This class is a real search engine (I personnally use it couple with the slack-get daemon, on my website), and it has been designed to be easily tunable.
 
     use slackget10::Search;
 
@@ -142,6 +142,14 @@ Take a string and a fiels list as parameter, and search for this string in the p
 
 	my @array = $search->search_package_multi_fields($string,@fields);
 
+TIPS: you can restrict the search domain by providing fields with restrictions, for example :
+
+	# For a search only in packages from the Slackware source.
+	my @results = $search->search_package_multi_fields('burner', 'package-source=slackware', 'description','name');
+	
+	# For a search only in packages from the Audioslack source, and only i486 packages
+	my @results = $search->search_package_multi_fields('burner', 'package-source=audioslack', 'architecture=i486', 'description','name');
+
 =cut
 
 sub search_package_multi_fields {
@@ -165,6 +173,50 @@ sub search_package_multi_fields {
 		}
 	}
 	return (@result);
+}
+
+=head2 multi_search
+
+take a reference on an array of string (requests) as first parameters and a reference to an array which contains the list of fields to search in, and perform a search.
+
+This method return an array of slackget10::Package as a result. The array is sort by pertinences.
+
+	my @result_array = $search->multi_search(['burn','dvd','cd'],['name','id','description']) ;
+
+You can apply the same tips than for the search_package_multi_fields() method, about the restrictions on search fields.
+
+=cut
+
+sub multi_search
+{
+	my ($self,$requests,$fields,$opts) = @_ ;
+	my @result;
+	foreach (@{$self->{PKGLIST}->get_all()}){
+		my $is_result = undef;
+		my $cpt = 0 ;
+		foreach my $field (@{$fields})
+		{
+			foreach my $string (@{$requests})
+			{
+				if($field=~ /^([^=]+)=(.+)/)
+				{
+					if(defined($_->getValue($1)) && $_->getValue($1) ne $2)
+					{
+						print "[search] '$1' => '",$_->getValue($1),"' ne '$2'\n";
+						last ;
+					}
+				}
+				if($_->get_id() =~ /\Q$string\E/i or (defined($_->getValue($field)) && (my @tmp = $_->getValue($field)=~ /\Q$string\E/gi))){
+					$cpt+= scalar(@tmp) ;
+					$is_result = 1;
+				}
+			}
+			
+		}
+		$_->setValue('score',$cpt);
+		push @result, $_ if($is_result);
+	}
+	return @result;
 }
 
 =head1 AUTHOR

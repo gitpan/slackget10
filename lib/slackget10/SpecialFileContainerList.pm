@@ -3,6 +3,8 @@ package slackget10::SpecialFileContainerList;
 use warnings;
 use strict;
 
+require slackget10::List ;
+
 =head1 NAME
 
 slackget10::SpecialFileContainerList - This class is a container of slackget10::SpecialFileContainer object
@@ -13,7 +15,8 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '0.9.0';
+our @ISA = qw( slackget10::List );
 
 =head1 SYNOPSIS
 
@@ -39,101 +42,107 @@ This class constructor don't take any parameters.
 
 sub new
 {
-	my ($class) = @_ ;
-	my $self={};
+	my ($class,%args) = @_ ;
+	my $self={list_type => 'slackget10::SpecialFileContainer','root-tag' => 'slack-get'};
+	foreach (keys(%args))
+	{
+		$self->{$_} = $args{$_};
+	}
 	$self->{LIST} = [] ;
+	$self->{ENCODING} = 'utf8' ;
+	$self->{ENCODING} = $args{'encoding'} if(defined($args{'encoding'})) ;
 	bless($self);#,$class
 	return $self;
 }
-
-=head1 FUNCTIONS
-
-=head2 add
-
-Add the package passed in argument to the list. The argument must be a slackget10::SpecialFileContainer object
-
-	$containerlist->add($package);
-
-=cut
-
-sub add {
-	my ($self,$container) = @_ ;
-	
-	return undef if(ref($container) ne 'slackget10::SpecialFileContainer');
-# 	print "adding $container to the $self->{LIST} list of $self object\n";
-	push @{$self->{LIST}}, $container;
-	return 1;
-}
-
-=head2 get
-
-return the $index slackget10::SpecialFileContainer object in the list
-
-	$containerlist->get($index);
-
-=cut
-
-sub get {
-	my ($self,$idx) = @_ ;
-	return $self->{LIST}->[$idx];
-}
-
-=head2 get_all
-
-return a reference on an array containing all packages.
-
-	$arrayref = $containerlist->get_all();
-
-=cut
-
-sub get_all {
-	my $self = shift ;
-	return $self->{LIST};
-}
-
-=head2 Shift
-
-Same as the Perl shift. Shifts of and return the first slackget10::SpecialFileContainer of the slackget10::SpecialFileContainerList;
-
-	$package = $containerlist->Shift();
-
-=cut
-
-sub Shift {
-	my ($self) = @_ ;
-	return shift(@{$self->{LIST}});
-}
-
-=head2 to_XML
-
-return an XML encoded string.
-
-	$xml = $containerlist->to_XML();
-
-=cut
-
-sub to_XML
-{
-	my $self = shift;
-	my $xml = "<slack-get>\n";
-	foreach (@{$self->{LIST}}){
-# 		print "[$self] XMLization of $_\n";
-		$xml .= $_->to_XML();
-	}
-	$xml .= "</slack-get>\n";
-	return $xml;
-}
-
-=head2 to_string
-
-Alias for to_XML()
-
-=cut
-
-sub to_string{
-	my $self = shift;
-	$self->to_XML();
-}
+# 
+# =head1 FUNCTIONS
+# 
+# =head2 add
+# 
+# Add the package passed in argument to the list. The argument must be a slackget10::SpecialFileContainer object
+# 
+# 	$containerlist->add($package);
+# 
+# =cut
+# 
+# sub add {
+# 	my ($self,$container) = @_ ;
+# 	
+# 	return undef if(ref($container) ne 'slackget10::SpecialFileContainer');
+# # 	print "adding $container to the $self->{LIST} list of $self object\n";
+# 	push @{$self->{LIST}}, $container;
+# 	return 1;
+# }
+# 
+# =head2 get
+# 
+# return the $index slackget10::SpecialFileContainer object in the list
+# 
+# 	$containerlist->get($index);
+# 
+# =cut
+# 
+# sub get {
+# 	my ($self,$idx) = @_ ;
+# 	return $self->{LIST}->[$idx];
+# }
+# 
+# =head2 get_all
+# 
+# return a reference on an array containing all packages.
+# 
+# 	$arrayref = $containerlist->get_all();
+# 
+# =cut
+# 
+# sub get_all {
+# 	my $self = shift ;
+# 	return $self->{LIST};
+# }
+# 
+# =head2 Shift
+# 
+# Same as the Perl shift. Shifts of and return the first slackget10::SpecialFileContainer of the slackget10::SpecialFileContainerList;
+# 
+# 	$package = $containerlist->Shift();
+# 
+# =cut
+# 
+# sub Shift {
+# 	my ($self) = @_ ;
+# 	return shift(@{$self->{LIST}});
+# }
+# 
+# =head2 to_XML
+# 
+# return an XML encoded string.
+# 
+# 	$xml = $containerlist->to_XML();
+# 
+# =cut
+# 
+# sub to_XML
+# {
+# 	my $self = shift;
+# 	my $xml = "<slack-get>\n";
+# 	foreach (@{$self->{LIST}}){
+# # 		print "[$self] XMLization of $_\n";
+# 		$xml .= $_->to_XML();
+# 	}
+# 	$xml .= "</slack-get>\n";
+# 	return $xml;
+# }
+# 
+# =head2 to_string
+# 
+# Alias for to_XML()
+# 
+# =cut
+# 
+# sub to_string{
+# 	my $self = shift;
+# 	$self->to_XML();
+# }
 
 
 =head1 AUTHOR

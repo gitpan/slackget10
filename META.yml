@@ -1,15 +1,18 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         slackget10
-version:      0.08
+version:      0.09
 version_from: lib/slackget10.pm
 installdirs:  site
 requires:
     Data::Dumper:                  2.121_02
     File::Copy:                    2.08
+    Getopt::Long:                  0
+    GnuPG:                         0
     HTTP::Status:                  1.28
     LWP::Simple:                   1.41
     Net::FTP:                      2.75
+    Proc::Daemon:                  0
     Qt:                            3.008
     Test::More:                    0.47
     Time::HiRes:                   1.66

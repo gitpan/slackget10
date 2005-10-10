@@ -1,0 +1,18 @@
+{
+          'build_requires' => {},
+          'conflicts' => {},
+          'requires' => {
+                          'File::Copy' => '>= 2.08',
+                          'Net::FTP' => '>= 2.75',
+                          'Data::Dumper' => '>= 2.121_02',
+                          'XML::Simple' => '>= 2.14',
+                          'Time::HiRes' => '>= 1.66',
+                          'HTTP::Status' => '>= 1.28',
+                          'perl' => '>= 5.8.5',
+                          'Test::More' => '>= 0.47',
+                          'LWP::Simple' => '>= 1.41'
+                        },
+          'recommends' => {
+                            'Qt' => '3.008'
+                          }
+        }
