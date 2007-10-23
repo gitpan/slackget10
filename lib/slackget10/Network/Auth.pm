@@ -433,6 +433,43 @@ sub can_search {
 	}
 }
 
+=head2 is_allowed_to
+
+=cut
+
+sub is_allowed_to {
+	my ($self,$rule,$host) = @_ ;
+	if(exists($self->{CONF}->{daemon}->{'connection-policy'}->{host}->{"$host"}) && defined($self->{CONF}->{daemon}->{'connection-policy'}->{host}->{"$host"}))
+	{
+		if(exists($self->{CONF}->{daemon}->{'connection-policy'}->{host}->{"$host"}->{$rule}) && defined($self->{CONF}->{daemon}->{'connection-policy'}->{host}->{"$host"}->{$rule}))
+		{
+			if($self->{CONF}->{daemon}->{'connection-policy'}->{host}->{"$host"}->{$rule}=~ /yes/i)
+			{
+				return 1;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+	}
+	if(exists($self->{CONF}->{daemon}->{'connection-policy'}->{all}->{$rule}) && defined($self->{CONF}->{daemon}->{'connection-policy'}->{all}->{$rule}))
+	{
+		if($self->{CONF}->{daemon}->{'connection-policy'}->{all}->{$rule}=~ /yes/i)
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	else
+	{
+		return undef;
+	}
+}
+
 
 
 =head1 AUTHOR

@@ -5,6 +5,7 @@ use strict;
 
 require slackget10::Network::Connection::FTP ;
 require slackget10::Network::Connection::HTTP ;
+require slackget10::Network::Connection::FILE ;
 
 =head1 NAME
 
@@ -12,11 +13,11 @@ slackget10::Network::Connection - A wrapper for network operation in slack-get
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.9.6
 
 =cut
 
-our $VERSION = '0.9.6';
+our $VERSION = '0.9.7';
 
 # my %equiv = (
 # 	'normal' => 'IO::Socket::INET',
@@ -33,7 +34,7 @@ This class is anoter wrapper for slack-get. It will encapsulate all nework opera
 
 =head2 Some words about subclass
 
-This class is a wrapper for subclass like slackget10::Network::Connection::HTTP or slackget10::Network::Connection::FTP. You can add a class for a new protocol (and update this constructor) very simply but you must know that all class the slackget10::Network::Connection::* must have the following methods (the format is : <method name(<arguments>)> : <returned value>, parmaeters between [] are optionnals):
+This class is a wrapper for subclass like slackget10::Network::Connection::HTTP or slackget10::Network::Connection::FTP. You can add a class for a new protocol (and update this constructor) very simply but you must know that all class the slackget10::Network::Connection::* must have the following methods (the format is : <method name(<arguments>)> : <returned value>, parmameters between [] are optionnals):
 
 	- test_server : a float (the server response time)
 	- fetch_file([$remote_filename],[$local_file]) : a boolean (1 or 0). NOTE: this method store the fetched file on the hard disk. If $local_file is not defined, fetch() must store the file in <update-directory>.
@@ -83,7 +84,7 @@ This class is a wrapper for subclass like slackget10::Network::Connection::HTTP 
 	or :
 	
 	my $status = $connection->fetch('FILELIST.TXT',"$config->{common}->{'update-directory'}/".$server->shortname."/cache/FILELIST.TXT");
-	ie "[ERROR] unable to download FILELIST.TXT\n" unless ($status);
+	die "[ERROR] unable to download FILELIST.TXT\n" unless ($status);
 
 The global way (3) is not recommended because of the lake of control on the downloaded file. For example, if there is only 1 download which fail, fetch_all will return undef and you don't know which download have failed.
 
@@ -154,8 +155,11 @@ Take a string as argument and return TRUE (1) if $string is an http or ftp URL a
 
 sub is_url {
 	my ($self,$url)=@_;
-	
-	if($url=~ /^([fhtps]{3,5}):\/\/([^\/]+){1}(\/.*)?$/){
+	if($url=~ /file:\/\/(.+)/)
+	{
+		return 1;
+	}
+	elsif($url=~ /^([fhtps]{3,5}):\/\/([^\/]+){1}(\/.*)?$/){
 		return 1;
 	}
 	else{
@@ -173,7 +177,7 @@ extract the following informations from $url :
 
 For example :
 
-	$connection->pars_url("ftp://ftp.lip6.fr/pub/linux/distributions/slackware/slackware-current/slackware/n/dhcp-3.0.1-i486-1.tgz");
+	$connection->parse_url("ftp://ftp.lip6.fr/pub/linux/distributions/slackware/slackware-current/slackware/n/dhcp-3.0.1-i486-1.tgz");
 
 Will extract :
 
@@ -187,8 +191,24 @@ This method return TRUE (1) if all goes well, else return FALSE (0)
 
 sub parse_url {
 	my ($self,$url)=@_;
-	
-	if(my @tmp = $url=~ /^([fhtps]{3,5}):\/\/([^\/]+){1}(\/.*)?$/){
+	return 0 unless(defined($url));
+	if($url=~ /file:\/\/(.+)/)
+	{
+		$self->{DATA}->{protocol} = 'file';
+		$self->{DATA}->{file} = $1;
+# 		print "[debug] file is set to $self->{DATA}->{file} fo object $self\n";
+		#if we can extract a file name and a directory path we do.
+		if(defined($self->{DATA}->{file}) && $self->{DATA}->{file}=~ /^(.+\/)([^\/]*)$/i)
+		{
+			$self->{DATA}->{path} = $1;
+# 			print "[debug] path is set to $self->{DATA}->{path} fo object $self\n";
+			$self->{DATA}->{file} = $2;
+# 			print "[debug] file is set to $self->{DATA}->{file} fo object $self\n";
+		}
+		return undef unless($self->{DATA}->{path});
+		return 1;
+	}
+	elsif(my @tmp = $url=~ /^([fhtps]{3,5}):\/\/([^\/]+){1}(\/.*)?$/){
 		$self->{DATA}->{protocol} = $1;
 # 		print "[debug] setting host to : $2\n";
 		$self->{DATA}->{host} = $2;
@@ -229,6 +249,7 @@ sub strip_slash
 	{
 		$url=~ s/http:\//http:\/\//;
 		$url=~ s/ftp:\//ftp:\/\//;
+		$url=~ s/file:\//ftp:\/\//;
 		return $url;
 	}
 }
@@ -242,6 +263,10 @@ sub _load_network_module {
 	elsif($self->{DATA}->{protocol} eq 'http'){
 # 		print "[debug] derivation de slackget10::Network::Connection::HTTP\n";
 		@ISA = qw( slackget10::Network::Connection::HTTP ) ;
+	}
+	elsif($self->{DATA}->{protocol} eq 'file'){
+# 		print "[debug] derivation de slackget10::Network::Connection::HTTP\n";
+		@ISA = qw( slackget10::Network::Connection::FILE ) ;
 	}
 	else{
 		warn "[slackget10::Network::Connection] Network protocol '$self->{protocol}' is not available\n" ;
@@ -275,6 +300,12 @@ sub DEBUG_show_data_section
 
 =head1 ACCESSORS
 
+All accessors can get or set a value. You can use them like that :
+
+	$proto->my_accessor('a value'); # to set the value of the parameter controlled by this accessor
+	
+	my $value = $proto->my_accessor ; # to get the value of the parameter controlled by this accessor
+
 The common accessors are :
 
 =cut
@@ -288,8 +319,7 @@ return the protocol of the current Connection object as a string :
 =cut
 
 sub protocol {
-	my $self = shift ;
-	return $self->{DATA}->{protocol} ;
+	return $_[1] ? $_[0]->{DATA}->{protocol}=$_[1] : $_[0]->{DATA}->{protocol};
 }
 
 =head2 host
@@ -301,8 +331,7 @@ return the host of the current Connection object as a string :
 =cut
 
 sub host {
-	my $self = shift ;
-	return $self->{DATA}->{host} ;
+	return $_[1] ? $_[0]->{DATA}->{host}=$_[1] : $_[0]->{DATA}->{host};
 }
 
 =head2 file
@@ -314,8 +343,7 @@ return the file of the current Connection object as a string :
 =cut
 
 sub file {
-	my $self = shift ;
-	return $self->{DATA}->{file} ;
+	return $_[1] ? $_[0]->{DATA}->{file}=$_[1] : $_[0]->{DATA}->{file};
 }
 
 =head2 files
@@ -327,8 +355,7 @@ return the list of files of the current Connection object as an array reference 
 =cut
 
 sub files {
-	my $self = shift ;
-	return $self->{DATA}->{files} ;
+	return $_[1] ? $_[0]->{DATA}->{files}=$_[1] : $_[0]->{DATA}->{files};
 }
 
 =head2 path
@@ -340,8 +367,7 @@ return the path of the current Connection object as a string :
 =cut
 
 sub path {
-	my $self = shift ;
-	return $self->{DATA}->{path} ;
+	return $_[1] ? $_[0]->{DATA}->{path}=$_[1] : $_[0]->{DATA}->{path};
 }
 
 =head1 AUTHOR

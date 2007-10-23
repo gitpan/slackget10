@@ -9,15 +9,15 @@ slackget10::File - A class to manage files.
 
 =head1 VERSION
 
-Version 1.0.0
+Version 1.0.3
 
 =cut
 
-our $VERSION = '1.0.1';
+our $VERSION = '1.0.3';
 
 =head1 SYNOPSIS
 
-slackget10::File is the class which represent a file for slack-get. You can perform all operation on file with this module. 
+slackget10::File is the class which represent a file for slack-get. You can perform 0all operation on file with this module. 
 
 Access to hard disk are economized by taking a copy of the file in memory, so if you work on big file it may be a bad idea to use this module. Or maybe you have some interest to close the file while you don't work on it.
 
@@ -41,9 +41,23 @@ sub new
 	my $self={%args};
 # 	print "\nActual file-encoding: $self->{'file-encoding'}\nargs : $args{'file-encoding'}\nFile: $file\n";<STDIN>;
 	bless($self,$class);
-	$self->{'file-encoding'} = 'utf8' unless(defined($self->{'file-encoding'})); #FIXME: trouver pourquoi ça ne fonctionne pas en utf8 (à un moment une classe ne propage pas l'encodage!)
+	$self->{'file-encoding'} = 'utf8' unless(defined($self->{'file-encoding'}));
+	if(defined($file) && -e $file && !defined($args{'load-raw'}))
+	{
+		$self->{TYPE} = `LC_ALL=C file -b $file | awk '{print \$1}'`;
+		chomp $self->{TYPE};
+		$self->{TYPE} = 'ASCII' if($self->{TYPE} eq 'empty');
+		die "[slackget10::File::constructor] unsupported file type \"$self->{TYPE}\" for file $file. Supported file type are gzip, bzip2, ASCII and XML\n" unless($self->{TYPE} eq 'gzip' || $self->{TYPE} eq 'bzip2' || $self->{TYPE} eq 'ASCII' || $self->{TYPE} eq 'XML' || $self->{TYPE} eq 'Quake') ;
+	}
 # 	print "using $self->{'file-encoding'} as file-encoding for file $file\n";
 	$self->{FILENAME} = $file;
+	$self->{MODE} = $args{'mode'} if($args{'mode'} && ($args{'mode'} eq 'write' or $args{'mode'} eq 'rewrite'));
+	$self->{BINARY} = 0;
+	$self->{BINARY} = $args{'binary'} if($args{'binary'});
+	$self->{SKIP_WL} = $args{'skip-white-line'} if($args{'skip-white-line'});
+	$self->{SKIP_WL} = $args{'skip-white-lines'} if($args{'skip-white-lines'});
+	$self->{LOAD_RAW} = undef;
+	$self->{LOAD_RAW} = $args{'load-raw'} if($args{'load-raw'});
 	if(defined($file) && -e $file && !defined($self->{'no-auto-load'})){
 		$self->Read();
 	}
@@ -65,6 +79,8 @@ Take a filename as argument.
 	$file->Write();
 	$file->Write("bar.txt");
 
+This class try to determine the type of the file via the command `file` (so you need `file` in your path). If the type of the file is not in gzip, bzip2, ASCII or XML the constructor die()-ed. You can avoid that, if you need to work with unsupported file, by passing a "load-raw" parameter.
+
 Additionnaly you can pass an file encoding (default is utf8). For example as a European I prefer that files are stored and compile in the iso-8859-1 charset so I use the following :
 
 	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1');
@@ -72,6 +88,21 @@ Additionnaly you can pass an file encoding (default is utf8). For example as a E
 You can also disabling the auto load of the file by passing a parameter 'no-auto-load' => 1 :
 
 	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1', 'no-auto-load' => 1);
+
+You can also pass an argument "mode" which take 'rewrite' or 'write' as value :
+
+	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1', 'mode' => 'rewrite');
+
+This will decide how to open the file (> or >>)
+
+You can also specify if the file must be open as binary or normal text with the "binary" argument. This one is boolean (0 or 1). The default value is 0 :
+
+	my $file = slackget10::File->new('package.tgz','binary' => 1); # In real usage package.tgz will be read UNCOMPRESSED by Read().
+	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1', 'mode' => 'rewrite', binary => 0);
+
+If you want to load a raw file without uncompressing it you can pass the "load-raw" parameter :
+
+	my $file = slackget10::File->new('package.tgz','binary' => 1, 'load-raw' => 1);
 
 =head1 FUNCTIONS
 
@@ -87,6 +118,10 @@ You can call this method without passing parameters, if you have give a filename
 
 This method doesn't return the file, you must call Get_file() to do that.
 
+Supported file formats : gzipped, bzipped and ASCII file are natively supported (for compressed formats you need to have gzip and bzip2 installed in your path).
+
+If you specify load-raw => 1 to the constructor, read will load in memory a file even if the format is not recognize.
+
 =cut
 
 sub Read 
@@ -100,21 +135,92 @@ sub Read
 	{
 		$file = $self->{FILENAME};
 	}
-        unless ( -e $file or -R $file)
-        {
-                warn "[ slackget10::File ] unable to read $file : $!\n";
-                return undef ;
-        }
-        my $tmp;
-        my @file = ();
-        open (F2,"<:encoding($self->{'file-encoding'})",$file);
-        while (defined($tmp=<F2>))
-        {
-                push @file,$tmp;
-        }
-        close (F2);
-	$self->{FILE} = \@file ;
-        return 1;
+	unless ( -e $file or -R $file)
+	{
+		warn "[slackget10::File] unable to read $file : $!\n";
+		return undef ;
+	}
+	my $tmp;
+	my @file = ();
+	if(defined($self->{TYPE}) && ($self->{TYPE} eq 'ASCII' || $self->{TYPE} eq 'XML' || $self->{TYPE} eq 'Quake') && !defined($self->{LOAD_RAW}))
+	{
+# 		print "[DEBUG] [slackget10::File] loading $file as 'plain text' file.";
+		if(open (F2,"<:encoding($self->{'file-encoding'})",$file))
+		{
+			binmode(F2) if($self->{'BINARY'}) ;
+			if($self->{SKIP_WL})
+			{
+				print "[slackget10::File DEBUG] reading and skipping white lines\n";
+				while (defined($tmp=<F2>))
+				{
+					next if($tmp=~ /^\s*$/);
+					push @file,$tmp;
+				}
+			}
+			else
+			{
+				while (defined($tmp=<F2>))
+				{
+					push @file,$tmp;
+				}
+			}
+			
+			close (F2);
+			$self->{FILE} = \@file ;
+			return 1;
+		}
+		else
+		{
+			warn "[slackget10::File] cannot open \"$file\" : $!\n";
+			return undef;
+		}
+	}
+	elsif($self->{TYPE} eq 'bzip2' && !defined($self->{LOAD_RAW}))
+	{
+# 		print "[DEBUG] [slackget10::File] loading $file as 'bzip2' file.";
+# 		my $tmp_file = `bzip2 -dc $file`;
+		foreach (split(/\n/,`bzip2 -dc $file`))
+		{
+			push @file, "$_\n";
+		}
+		$self->{FILE} = \@file ;
+		return 1;
+	}
+	elsif($self->{TYPE} eq 'gzip' && !defined($self->{LOAD_RAW}))
+	{
+# 		print "[DEBUG] [slackget10::File] loading $file as 'gzip' file.";
+# 		my $tmp_file = `gzip -dc $file`;
+		foreach (split(/\n/,`gzip -dc $file`))
+		{
+			push @file, "$_\n";
+		}
+		$self->{FILE} = \@file ;
+		return 1;
+	}
+	elsif(defined($self->{LOAD_RAW}) or $self->{TYPE} eq '')
+	{
+# 		print "[DEBUG] [slackget10::File] loading $file as 'raw' file.";
+		if(open(F2,$file))
+		{
+			binmode(F2) if($self->{'BINARY'}) ;
+			while (defined($tmp=<F2>))
+			{
+				push @file,$tmp;
+			}
+			close (F2);
+			$self->{FILE} = \@file ;
+			return 1;
+		}
+		else
+		{
+			warn "[slackget10::File] cannot (raw) open \"$file\" : $!\n";
+			return undef;
+		}
+	}
+	else
+	{
+		die "[slackget10::File] Read() method cannot load file \"$file\" in memory : \"$self->{TYPE}\" is an unsupported format.\n";
+	}
 
 }
 
@@ -187,19 +293,19 @@ sub _verify_lock_maker
 	my $self = shift;
 	my $file = new slackget10::File ("$self->{FILENAME}.lock");
 	my $locker = $file->Get_line(0) ;
-# 	print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker of file $self->{FILENAME} is $locker and current object is $self\n";
+# 	print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker of file \"$self->{FILENAME}\" is $locker and current object is $self\n";
 	$file->Close ;
 	undef($file);
 	my $object = ''.$self;
 # 	print "[debug file] compare object=$object and locker=$locker\n";
 	if($locker eq $object)
 	{
-# 		print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker access granted\n";
+# 		print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker access granted for file \"$self->{FILENAME}\"\n";
 		return 1;
 	}
 	else
 	{
-# 		print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker access ungranted\n";
+# 		print "\t[DEBUG] ( slackget10::File in _verify_lock_maker() ) locker access ungranted for file \"$self->{FILENAME}\"\n";
 		return undef;
 	}
 }
@@ -215,7 +321,7 @@ Return 1 if the file is locked by a slackget10::File object, else return undef.
 sub is_locked
 {
 	my $self = shift;
-	return 1 if(-e "$self->{FILENAME}.lock");
+	return 1 if(-e $self->{FILENAME}.".lock");
 	return undef;
 }
 
@@ -224,6 +330,10 @@ sub is_locked
 Take a filename to write data and raw data 
 
 	$file->Write($filename,@data);
+
+You can call this method with just a filename (in this case the file currently loaded will be wrote in the file you specify)
+
+	$file->Write($another_filename) ; # Write the currently loaded file into $another_filename
 
 You also can call this method without any parameter :
 
@@ -242,20 +352,43 @@ sub Write
 	@data = @{$self->{FILE}} unless(@data);
 #         if(open (FILE, ">$name"))
 # 	print "using $self->{'file-encoding'} as file-encoding for writing\n";
-	if(open (FILE, ">:encoding($self->{'file-encoding'})",$name))
-        {
-                foreach (@data)
-                {
-                        print FILE $_;
-                }
-                close (FILE) or return(undef);
-        }
-        else
-        {
-                warn "[ slackget10::File ] unable to write '$name' : $!\n";
-                return undef;
-        }
-        return 1;
+	 my $mode = '>';
+	if(defined($self->{MODE}) && $self->{MODE} eq 'rewrite')
+	{
+		$mode = '>>';
+	}
+	if(open (FILE, "$mode:encoding($self->{'file-encoding'})",$name))
+	{
+		binmode(FILE) if($self->{'BINARY'}) ;
+		# NOTE: In the case you need to clear the white line of your file, their will be a if() test no each array slot
+		# This is really time consumming, so id you don't need this feature we just test once for all and gain a lot in performance.
+		if($self->{SKIP_WL})
+		{
+			print "[slackget10::File DEBUG] mode 'skip-white-line' activate\n";
+			foreach (@data)
+			{
+				foreach my $tmp (split(/\n/,$_))
+				{
+					next if($tmp =~ /^\s*$/) ;
+					print FILE "$tmp\n" ;
+				}
+			}
+		}
+		else
+		{
+			foreach (@data)
+			{
+				print FILE $_;
+			}
+		}
+		close (FILE) or return(undef);
+	}
+	else
+	{
+		warn "[ slackget10::File ] unable to write '$name' : $!\n";
+		return undef;
+	}
+	return 1;
 }
 
 =head2 Add
@@ -313,6 +446,7 @@ You can ommit the $stop parameter (in this case Get_line() return the lines from
 
 sub Get_selection {
 	my ($self,$start,$stop) = @_ ;
+	$start = 0 unless($start);
 	$stop = $#{$self->{FILE}} unless($stop);
 	return @{$self->{FILE}}[$start..$stop];
 }
@@ -358,15 +492,17 @@ Without parameter return the current file encoding, with a parameter set the enc
 
 sub encoding
 {
-	my ($self,$encoding) = @_;
-	if(defined($encoding))
-	{
-		$self->{'file-encoding'} = $encoding ;
-	}
-	else
-	{
-		return $self->{'file-encoding'};
-	}
+	return $_[1] ? $_[0]->{'file-encoding'}=$_[1] : $_[0]->{'file-encoding'};
+# 	Idem au code suivant (qui est vachement plus clair mais aussi beeeeaaaaauuuucoup plus long), on economise ici 2 variables locales : meilleurs perf.
+# 	my ($self,$encoding) = @_;
+# 	if(defined($encoding))
+# 	{
+# 		$self->{'file-encoding'} = $encoding ;
+# 	}
+# 	else
+# 	{
+# 		return $self->{'file-encoding'};
+# 	}
 }
 
 =head2 filename

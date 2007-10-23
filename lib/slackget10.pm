@@ -15,11 +15,11 @@ slackget10 - The main slack-get 1.0 library
 
 =head1 VERSION
 
-Version 0.08
+Version 0.10
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 SYNOPSIS
 
@@ -36,9 +36,9 @@ This module is still pre-in alpha development phase and I release it on CPAN onl
 	-name => 'slack-getd',
 	-version => '1.0.1228'
     );
-    
+
     $sgo->log()->Log(1,"A log message") ;
-    
+
 
 =cut
 
@@ -136,10 +136,11 @@ sub load_plugins {
 	my $self = shift;
 	my $HOOKS = shift;
 	my $plugin_type = shift; # TODO: implémenter la séléction des types de plug-in
+	my $extra_ref = shift;
 # 	print "[SG10] needed type : $plugin_type\n";
 	#NOTE : searching for install plug-in
 	$self->log()->Log(2,"searching for plug-in\n") ;
-	my @plugins_name;
+	my %tmp_pg;
 	foreach my $dir (@INC)
 	{
 		if( -e "$dir/slackget10/Plugin" && -d "$dir/slackget10/Plugin")
@@ -150,15 +151,16 @@ sub load_plugins {
 				$name =~ s/.+\/([^\/]+)\.pm$/$1/;
 				$self->log()->Log(2,"found plug-in: $name\n") ;
  				print "[SG10] found plug-in: $name in $dir/slackget10/Plugin/\n" ;
-				push @plugins_name, $name;
+# 				push @plugins_name, $name;
+				$tmp_pg{$name} = 1;
 			}
-		}	
-		
+		}
 	}
 	#NOTE : loading plug-in
 	$self->log()->Log(2,"loading plug-in\n") ;
 	my @loaded_plugins;
-	foreach my $plg (@plugins_name)
+# 	foreach my $plg (@plugins_name)
+	foreach my $plg (keys(%tmp_pg))
 	{
 		my $ret = eval qq{require slackget10::Plugin::$plg} ;
 		unless($ret)
@@ -166,7 +168,7 @@ sub load_plugins {
 			if($@)
 			{
 				warn "Fatal Error while parsing plugin $plg : $@\n";
-				$self->log()->Log(1,"Fatal Error while parsing plugin $plg : $@\n") ;
+				$self->log()->Log(1,"Fatal Error while parsing plugin $plg (this is a programming error) : $@\n") ;
 			}
 			elsif($!)
 			{
@@ -180,11 +182,13 @@ sub load_plugins {
 # 			print "[SG10] \$package:$package\n";
 			my $type = '$'.$package.'::PLUGIN_TYPE';
 # 			print "[SG10] \$type:$type\n";
-			if(defined(eval qq{ $type }) && (eval qq{ $type } eq $plugin_type or eval qq{ $type } eq 'ALL'))
+			my $pg_type = eval qq{ $type };
+			if(defined($pg_type) && ($pg_type eq $plugin_type or $pg_type eq 'ALL'))
 			{
 				print "[SG10] loaded success for plug-in $plg\n" ;
 				$self->log()->Log(3,"loaded success for plug-in $plg\n") ;
 				push @loaded_plugins, $plg;
+				$self->{'plugin'}->{'types'}->{$ret} = $pg_type ;
 			}
 		}
 	}
@@ -194,35 +198,93 @@ sub load_plugins {
 	foreach my $plugin (@loaded_plugins)
 	{
 		my $package = "slackget10::Plugin::$plugin";
-		my $ret = eval{ $package->new($self) ; }  ; 
+		my $ret;
+		if($plugin_type=~ /gui/i)
+		{
+			# TODO: tester le code de chargement d'un plug-in graphique, la ligne suivante n'a pas encore été testée
+			print "[DEBUG slackget10.pm::load_plugins()] loading package \"$package\" call is \"use $package; $package( $extra_ref ) ;\" }\"\n";
+			$ret = eval "use $package; $package( $extra_ref ) ;" ;
+		}
+		else
+		{
+			$ret = eval{ $package->new($self) ; } ;
+		}
+		
 		if($@ or !$ret)
 		{
+			$self->{'plugin'}->{'types'}->{$ret} = undef;
+			delete $self->{'plugin'}->{'types'}->{$ret} ;
 			warn "Fatal Error while creating new instance of plugin $package: $@\n";
 			$self->log()->Log(1,"Fatal Error while creating new instance of plugin $package: $@\n") ;
 		}
 		else
 		{
+			
 # 			print "[SG10] $plugin instanciates\n" ;
 			$self->log()->Log(3,"$plugin instanciates\n") ;
+# 			if($plugin_type=~ /gui/i)
+# 			{
+# 				$ret->show();
+# 			}
+			print "[DEBUG slackget10.pm::load_plugins()] print pushing reference \"$ret\" on the plugin stack\n";
 			push @plugins, $ret;
 		}
 	}
-	@plugins_name = ();
+	%tmp_pg = ();
 	@loaded_plugins = ();
-	$self->{'plugin'}->{'raw_table'} = \@plugins ;
+	$self->register_plugins(\@plugins,$HOOKS);
+}
+
+=head2 register_plugins
+
+Register all plug-ins by supported calls.
+
+Take a plug-in array reference and a hooks array reference in arguments.
+
+	$sgo->register_plugins(\@plugins, \@HOOKS) ;
+
+Please read the code of the load_plugins() method to see how to set the object internal state.
+
+=cut
+
+sub register_plugins
+{
+	my ($self,$plugins,$HOOKS) = @_ ;
+	$self->{'plugin'}->{'raw_table'} = $plugins ;
 	$self->{'plugin'}->{'sorted'} = {} ;
 	# NOTE: dispatching plug-ins by hooks.
 	$self->log()->Log(2,"dispatching plug-in by supported HOOKS\n") ;
 	foreach my $hook (@{ $HOOKS })
 	{
+		my $hk = lc($hook) ;
+# 		print "[DEBUG slackget10.pm::register_plugins()] examining if plug-in support hook $hk\n";
 		$self->{'plugin'}->{'sorted'}->{$hook} = [] ;
-		foreach my $plugin (@plugins)
+		foreach my $plugin (@{ $plugins })
 		{
-			if($plugin->can(lc($hook)))
+			if($self->{'plugin'}->{'types'}->{$plugin}=~ /gui/i)
 			{
-# 				print "[SG10] registered plug-in $plugin for hook $hook\n" ;
-				$self->log()->Log(3,"registered plug-in $plugin for hook $hook\n") ;
-				push @{ $self->{'plugin'}->{'sorted'}->{$hook} },$plugin ;
+				
+				eval{ $plugin->$hk('test') ;};
+				if($@)
+				{
+					print "[SG10] plug-in $plugin do not support hook $hook\n" ;
+#  					warn "$@\n";
+				}
+				else
+				{
+					print "[SG10] registered plug-in $plugin for hook $hook\n" ;
+					$self->log()->Log(3,"registered plug-in $plugin for hook $hook\n") ;
+					push @{ $self->{'plugin'}->{'sorted'}->{$hook} },$plugin ;
+				}
+			}
+			else
+			{
+				if($plugin->can($hk))
+				{
+					print "[SG10] registered plug-in $plugin for hook $hook\n" ;
+					$self->log()->Log(3,"registered plug-in $plugin for hook $hook\n") ;
+					push @{ $self->{'plugin'}->{'sorted'}->{$hook} },$plugin ;
+				}
 			}
 		}
 	}
@@ -316,7 +378,17 @@ Return the slackget10::Config object of the current instance of the slackget10 o
 sub config
 {
 	my $self = shift;
-	return $self->{'config'} ;
+	my $cfg_name = shift;
+	if($cfg_name)
+	{
+		return undef if(!defined($cfg_name) || ! -e $cfg_name) ;
+		$self->{'config'} = new slackget10::Config ( $cfg_name )  or die "FATAL: error during configuration file parsing\n$!\n" ;
+		return 1;
+	}
+	else
+	{
+		return $self->{'config'} ;
+	}
 }
 
 =head2 auth
@@ -344,6 +416,43 @@ C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
 
 =head1 ACKNOWLEDGEMENTS
 

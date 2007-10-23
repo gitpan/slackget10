@@ -27,12 +27,12 @@ our @ISA = qw(Exporter);
 # 	
 # );
 
-our $VERSION = '0.3.6';
+our $VERSION = '0.3.8';
 
 sub new
 {
 	shift ;
-	my @arg= @_ ;
+	my %arg= @_ ;
         my $self= {};
 	$self->{'LOG_FORMAT'} = '[ %d/%m/%y AT %h H %n min %s sec ] <%P> %M' ;
 	$self->{'NAME'} = 'slackget10::Log';
@@ -49,12 +49,10 @@ sub new
 	$self->{'LR_MAIL_OPTIONS'} = undef ;
 	$self->{'LR_FTP_OPTIONS'} = undef ;
 	$self->{'_PRIV_NB_LOGED_MSG'} = 0;
-	for (my $k=0;$k<=$#arg;$k=$k+2)
+	foreach (keys(%arg))
 	{
-# 		print "\$arg[$k] : $arg[$k]\n\$arg[$k+1] : $arg[$k+1]\n";
-		$self->{"$arg[$k]"} = $arg[$k+1];
+		$self->{$_} = $arg{$_};
 	}
-	$self->{FILE} = new slackget10::File ($self->{'LOG_FILE'},'file-encoding' => $self->{'FILE_ENCODING'});
 	bless $self;
 	return $self;
 }
@@ -62,6 +60,7 @@ sub new
 sub _getLogLine
 {
 	my $self = shift;
+	my $lvl = shift;
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 	$mon++;
 	$mon="0$mon" if(length($mon)<2);
@@ -81,6 +80,7 @@ sub _getLogLine
 	$line =~ s/%h/$hour/g;
 	$line =~ s/%n/$min/g;
 	$line =~ s/%s/$sec/g;
+	$line =~ s/%L/$lvl/g;
 	return $line ;
 }
 sub Log
@@ -98,10 +98,11 @@ sub Log
 	}
 	if($lvl <= $log_lvl)
 	{
-		my $ll = $self->_getLogLine() ;
+		my $ll = $self->_getLogLine($lvl) ;
 		$ll=~ s/%M/$msg/g ;
+		$self->{FILE} = new slackget10::File ($self->{'LOG_FILE'},'file-encoding' => $self->{'FILE_ENCODING'}, 'no-auto-load' => 1, 'mode' => 'rewrite');
 		$self->{FILE}->Add($ll);
-		$self->{FILE}->Write ;
+		$self->{FILE}->Write_and_close() ;
 	}
 	if(defined($self->{'LOG_ROTATE'}))
 	{

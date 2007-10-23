@@ -43,7 +43,7 @@ Moreover, the get_result() methode need to return a hashref. Keys of this hashre
 
 Classes from ths namespace represent an abstraction of the special file they can manage so informations stored in the returned hashref must have a direct link with this special file.
 
-=head1 CONSTUSTOR
+=head1 CONSTRUCTOR
 
 =head2 new
 

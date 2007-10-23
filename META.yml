@@ -1,22 +1,122 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         slackget10
-version:      0.09
-version_from: lib/slackget10.pm
-installdirs:  site
-requires:
-    Data::Dumper:                  2.121_02
-    File::Copy:                    2.08
-    Getopt::Long:                  0
-    GnuPG:                         0
-    HTTP::Status:                  1.28
-    LWP::Simple:                   1.41
-    Net::FTP:                      2.75
-    Proc::Daemon:                  0
-    Qt:                            3.008
-    Test::More:                    0.47
-    Time::HiRes:                   1.66
-    XML::Simple:                   2.14
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+---
+name: slackget10
+version: 0.10
+author:
+  - 'Arnaud Dupuis <dupuisarn@cpan.org>'
+abstract: The main slack-get 1.0 library
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+build_requires:
+  Data::Dumper: '>= 2.121_02'
+  File::Copy: '>= 2.08'
+  Getopt::Long: 0
+  HTTP::Status: '>= 1.28'
+  LWP::Simple: '>= 1.41'
+  Net::FTP: '>= 2.75'
+  Proc::Daemon: 0
+  Test::More: 0
+  Time::HiRes: '>= 1.66'
+  XML::Simple: 0
+  perl: '>= 5.8.5'
+provides:
+  slackget10:
+    file: lib/slackget10.pm
+    version: 0.10
+  slackget10::Base:
+    file: lib/slackget10/Base.pm
+    version: 1.0.2
+  slackget10::Config:
+    file: lib/slackget10/Config.pm
+    version: 1.0.0
+  slackget10::Date:
+    file: lib/slackget10/Date.pm
+    version: 0.9.5
+  slackget10::File:
+    file: lib/slackget10/File.pm
+    version: 1.0.3
+  slackget10::GPG:
+    file: lib/slackget10/GPG.pm
+    version: 0.1
+  slackget10::GPG::Signature:
+    file: lib/slackget10/GPG/Signature.pm
+    version: 0.1
+  slackget10::List:
+    file: lib/slackget10/List.pm
+    version: 0.9.0
+  slackget10::Local:
+    file: lib/slackget10/Local.pm
+    version: 0.7.1
+  slackget10::Log:
+    file: lib/slackget10/Log.pm
+    version: 0.3.8
+  slackget10::MD5:
+    file: lib/slackget10/MD5.pm
+    version: 0.1
+  slackget10::Media:
+    file: lib/slackget10/Media.pm
+    version: 0.9.8
+  slackget10::MediaList:
+    file: lib/slackget10/MediaList.pm
+    version: 0.9.11
+  slackget10::Network:
+    file: lib/slackget10/Network.pm
+    version: 0.7.3
+  slackget10::Network::Auth:
+    file: lib/slackget10/Network/Auth.pm
+    version: 0.8.7
+  slackget10::Network::Connection:
+    file: lib/slackget10/Network/Connection.pm
+    version: 0.9.7
+  slackget10::Network::Connection::FILE:
+    file: lib/slackget10/Network/Connection/FILE.pm
+    version: 0.6.0
+  slackget10::Network::Connection::FTP:
+    file: lib/slackget10/Network/Connection/FTP.pm
+    version: 0.9.3
+  slackget10::Network::Connection::HTTP:
+    file: lib/slackget10/Network/Connection/HTTP.pm
+    version: 0.9.3
+  slackget10::Network::Response:
+    file: lib/slackget10/Network/Response.pm
+    version: 0.9.2
+  slackget10::Operation:
+    file: lib/slackget10/Operation.pm
+    version: 0.5
+  slackget10::Package:
+    file: lib/slackget10/Package.pm
+    version: 1.0.2
+  slackget10::PackageList:
+    file: lib/slackget10/PackageList.pm
+    version: 1.0.0
+  slackget10::PkgTools:
+    file: lib/slackget10/PkgTools.pm
+    version: 0.4.6
+  slackget10::Search:
+    file: lib/slackget10/Search.pm
+    version: 0.8.5
+  slackget10::SpecialFileContainer:
+    file: lib/slackget10/SpecialFileContainer.pm
+    version: 0.9.6
+  slackget10::SpecialFileContainerList:
+    file: lib/slackget10/SpecialFileContainerList.pm
+    version: 0.9.0
+  slackget10::SpecialFiles::CHECKSUMS:
+    file: lib/slackget10/SpecialFiles/CHECKSUMS.pm
+    version: 0.9.8
+  slackget10::SpecialFiles::FILELIST:
+    file: lib/slackget10/SpecialFiles/FILELIST.pm
+    version: 0.9.8
+  slackget10::SpecialFiles::PACKAGES:
+    file: lib/slackget10/SpecialFiles/PACKAGES.pm
+    version: 0.9.8
+  slackget10::Status:
+    file: lib/slackget10/Status.pm
+    version: 0.9.9
+  slackget::Log::logRotate:
+    file: lib/slackget10/Log/logRotate.pm
+    version: 0.12
+generated_by: Module::Build version 0.2806
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2

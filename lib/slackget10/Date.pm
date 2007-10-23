@@ -13,7 +13,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '0.9.3';
+our $VERSION = '0.9.5';
 
 =head1 SYNOPSIS
 
@@ -164,10 +164,10 @@ sub compare {
 
 =head2 is_equal
 
-Take another date object as parameter and return TRYUE (1) if this two date object are equal (if compare() return 0), and else return false (0).
+Take another date object as parameter and return TRUE (1) if this two date object are equal (if compare() return 0), and else return false (0).
 
 	if($date->is_equal($another_date)){
-		...do smoething...
+		...do something...
 	}
 
 WARNING : this method also return undef if $another_date is not a slackget10::Date object, so be carefull.
@@ -206,6 +206,28 @@ sub _fill_undef {
 	}
 	$self->{DATE}->{'day-number'} = 0 unless(defined($self->{DATE}->{'day-number'}));
 	$self->{DATE}->{'year'} = 0 unless(defined($self->{DATE}->{'year'}));
+}
+
+=head2 today
+
+This method fill the slackget10::Date object with the today parameters. This method fill the followings object value : day-number, year, month-number, 
+
+	$date->today ;
+	print "Today date is ",$date->to_string,"\n";
+
+=cut
+
+sub today
+{
+	my $self = shift;
+	my $date_format = '%d/%m/%Y::%H:%M:%S';
+	my $date = `date +$date_format`;
+	my ($date_tmp,$hour) = split(/::/,$date);
+	my ($d,$m,$y) = split(/\//, $date_tmp);
+	$self->{DATE}->{'day-number'} = $d;
+	$self->{DATE}->{'month-number'} = $m;
+	$self->{DATE}->{'year'} = $y;
+	$self->{DATE}->{'hour'} = $hour;
 }
 
 =head2 to_XML

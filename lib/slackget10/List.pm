@@ -9,11 +9,11 @@ slackget10::List - This class is a general List class.
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.9.0
 
 =cut
 
-our $VERSION = '0.8.9';
+our $VERSION = '0.9.0';
 
 =head1 SYNOPSIS
 
@@ -100,6 +100,8 @@ return the $index -nth object in the list
 
 sub get {
 	my ($self,$idx) = @_ ;
+	return undef unless(defined($idx));
+	return undef unless(defined($self->{LIST}) && ref($self->{LIST}) eq 'ARRAY') ;
 	return $self->{LIST}->[$idx];
 }
 
@@ -113,6 +115,7 @@ return a reference on an array containing all packages.
 
 sub get_all {
 	my $self = shift ;
+	return [] unless(defined($self->{LIST}) && ref($self->{LIST}) eq 'ARRAY') ;
 	return $self->{LIST};
 }
 
@@ -122,12 +125,13 @@ Same as the Perl shift. Shifts of and return the first object of the slackget10:
 
 	$element = $list->Shift();
 
-If an index is passed shift and return the given index.
+If a numerical index is passed shift and return the given index.
 
 =cut
 
 sub Shift {
 	my ($self,$elem) = @_ ;
+	return undef unless(defined($self->{LIST}) && ref($self->{LIST}) eq 'ARRAY') ;
 	unless(defined($elem))
 	{
 		return shift(@{$self->{LIST}});
@@ -152,6 +156,7 @@ sub to_XML
 {
 	my $self = shift;
 	my $xml = "";
+	return [] unless(defined($self->{LIST}) && ref($self->{LIST}) eq 'ARRAY') ;
 	$self->{ENCODING} = uc($self->{ENCODING}) ; # NOTE: vérifier que ça ne merde pas. 
 	$xml .= "<?xml version=\"1.0\" encoding=\"$self->{ENCODING}\" standalone=\"yes\"?>\n<$self->{'root-tag'}>\n" if(!defined($self->{'no-root-tag'}) && defined($self->{'root-tag'}));
 	foreach (@{$self->{LIST}}){
@@ -193,7 +198,7 @@ sub to_string{
 
 =head2 Length
 
-Return the length (the number of element) of the current list. If you are interest by the size in memory you have to multiply by yourself the number returned by this method by the size of a signle object.
+Return the length (the number of element) of the current list. If you are interest by the size in memory you have to multiply by yourself the number returned by this method by the size of a single object.
 
 	$list->Length ;
 
@@ -202,6 +207,7 @@ Return the length (the number of element) of the current list. If you are intere
 sub Length
 {
 	my $self = shift;
+	return 0 unless(defined($self->{LIST}) && ref($self->{LIST}) eq 'ARRAY') ;
 	return scalar(@{$self->{LIST}});
 }
 

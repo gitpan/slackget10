@@ -15,7 +15,7 @@ slackget10::SpecialFileContainer - A class to class, sort and compil the PACKAGE
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.9.6
 
 =cut
 
@@ -86,15 +86,12 @@ sub compile {
 	$self->{DATA}->{FILELIST}->compile ;
 	print "ok\n";
 	printf("compiling PACKAGES...");
-	$|++;
 	$self->{DATA}->{PACKAGES}->compile ; 
 	print "ok\n";
 	printf("compiling CHECKSUMS...");
-	$|++;
 	$self->{DATA}->{CHECKSUMS}->compile ;
 	print "ok\n";
 	printf("merging data...");
-	$|++;
 	$self->{DATA}->{PACKAGELIST} = undef;
 	my $packagelist = slackget10::PackageList->new('no-root-tag' => 1) or return undef;
 	my $r_list = $self->{DATA}->{FILELIST}->get_file_list ;
@@ -110,7 +107,14 @@ sub compile {
 		$packagelist->add($pack);
 # 		$pack->print_restricted_info ;
 	}
+	$packagelist->index_list ;
 	$self->{DATA}->{PACKAGELIST} = $packagelist ;
+# 	my $total_size = 0;
+# 	foreach (@{$packagelist->get_all})
+# 	{
+# 		$total_size += $_->compressed_size ;
+# 	}
+# 	print "TOTAL SIZE: $total_size ko\n";
 	## WARNING: DEBUG ONLY
 # 	use slackget10::File;
 # 	
@@ -122,7 +126,7 @@ sub compile {
 
 =head2 id
 
-Return the id of the SpecialFileContainer object (like: 'slackware', 'linuxpackages', etc.)
+Return the id of the SpecialFileContainer object id (like: 'slackware', 'linuxpackages', etc.)
 
 	my $id = $container->id ;
 

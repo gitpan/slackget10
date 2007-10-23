@@ -22,7 +22,7 @@ our @ISA = qw( slackget10::List );
 
 =head1 SYNOPSIS
 
-This class is a container of slackget10::Package object, and allow you to perform some operations on this packages list. As the Package class, it is a slack-get's internal representation of data.
+This class is a container of slackget10::Package object, and allow you to perform some operations on this packages list. As the Package's list class, it is a slack-get's internal representation of data.
 
     use slackget10::PackageList;
 
@@ -30,13 +30,13 @@ This class is a container of slackget10::Package object, and allow you to perfor
     $packagelist->add($package);
     $packagelist->get($index);
     my $package = $packagelist->Shift();
-    
+
 
 =head1 CONSTRUCTOR
 
 =head2 new
 
-This class constructor don't take any parameters to works properly, but you can eventually disable the root tag <packagelist> by using 'no-root-tag' => 1, and modify the default encoding (utf8) by passing an 'encoding' => <your encoding> parameter.
+This class constructor don't take any parameters to works properly, but you can eventually disable the root tag <packagelist> by using 'no-root-tag' => 1, and modify the default encoding (utf8) by passing an 'encoding' => <your encoding> parameter. Thoses options are only related to the export functions.
 
 	my $PackageList = new slackget10::PackageList ();
 	my $PackageList = new slackget10::PackageList ('no-root-tag' => 1);
@@ -175,6 +175,7 @@ sub index_list
 	{
 		$self->{INDEX}->{$pkg->get_id()} = $pkg ;
 	}
+	return 1;
 }
 
 =head2 get_indexed
@@ -190,6 +191,21 @@ sub get_indexed
 	my ($self, $id) = @_ ;
 	return $self->{INDEX}->{$id} ;
 }
+
+=head2 get_indexes
+
+Return the list of all indexes
+
+	my @indexes = $list->get_indexes() ;
+
+=cut
+
+sub get_indexes
+{
+	my ($self, $id) = @_ ;
+	return keys(%{$self->{INDEX}}) ;
+}
+
 
 
 =head1 AUTHOR

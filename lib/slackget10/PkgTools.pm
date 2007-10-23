@@ -12,11 +12,11 @@ slackget10::PkgTools - A wrapper for the pkgtools action(installpkg, upgradepkg 
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.4.6
 
 =cut
 
-our $VERSION = '0.4.3';
+our $VERSION = '0.4.6';
 
 =head1 SYNOPSIS
 
@@ -54,6 +54,10 @@ sub new
 		9 => "Package scheduled for install on next reboot.\n",
 		10 => "An error occured in the slackget10::PkgTool class (during installpkg, upgradepkg or removepkg) but the class is unable to understand the error.\n"
 	};
+	$self->{DATA} = {
+		'info-output' => undef,
+		'connection-id' => 0
+	};
 	bless($self,$class);
 	
 	return $self;
@@ -66,6 +70,18 @@ sub new
 Take a slackget10::Config object as argument :
 
 	my $pkgtool = new slackget10::PkgTool ($config);
+=cut
+
+sub _send_info
+{
+	my ($self,$action,$pkg) = @_;
+	my $client=0;
+	$client = $self->{DATA}->{'info-output'} if(defined($self->{DATA}->{'info-output'}) && $self->{DATA}->{'info-output'});
+	#print for debug purpose
+	print "[slackget10::PkgTools::DEBUG] info:$self->{DATA}->{'connection-id'}:2:progress:file=$pkg;state=now$action\n";
+	
+	print $client->put("info:$self->{DATA}->{'connection-id'}:2:progress:file=$pkg;state=now$action\n") if($client && defined($self->{DATA}->{'connection-id'}) && $self->{DATA}->{'connection-id'});
+}
 
 =head1 FUNCTIONS
 
@@ -99,19 +115,25 @@ sub install {
 		my ($self,$pkg) = @_;
 		my $status = new slackget10::Status (codes => $self->{STATUS});
 		#$self->{CONF}->{common}->{'update-directory'}/".$server->shortname."/cache/
+# 		print "[slackget10::PkgTools::_install_package DEBUG] try to install package ",$pkg->get_id,"\n";
 		if($pkg->getValue('install_later'))
 		{
+# 			print "[slackget10::PkgTools::_install_package DEBUG] package ",$pkg->get_id," will be installed later.\n";
 			mkdir "/tmp/slack_get_boot_install" unless( -e "/tmp/slack_get_boot_install") ;
 		}
-		elsif( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
+		elsif( -e "$self->{CONF}->{common}->{'update-directory'}/package-cache/".$pkg->get_id.".tgz")
 		{
-			if(system("$self->{CONF}->{common}->{pkgtools}->{'installpkg-binary'} $self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")==0)
+			$self->_send_info('install',$pkg->get_id());
+# 			print "[slackget10::PkgTools::_install_package DEBUG] log file : $self->{CONF}->{common}->{'log'}->{'log-file'}\n";
+			if(system("2>>$self->{CONF}->{common}->{'log'}->{'log-file'} $self->{CONF}->{common}->{pkgtools}->{'installpkg-binary'} $self->{CONF}->{common}->{'update-directory'}/package-cache/".$pkg->get_id.".tgz")==0)
 			{
+# 				print "[slackget10::PkgTools::_install_package DEBUG] package ",$pkg->get_id," have been correctly installed\n";
 				$status->current(0);
 				return $status ;
 			}
 			else
 			{
+# 				print "[slackget10::PkgTools::_install_package DEBUG] package ",$pkg->get_id," have NOT been correctly installed\n";
 				$status->current(6);
 				return $status ;
 			}
@@ -119,6 +141,7 @@ sub install {
 		}
 		else
 		{
+# 			print "[slackget10::PkgTools::_install_package DEBUG] package ",$pkg->get_id," can't be installed.\n";
 			$status->current(3);
 			return $status ;
 		}
@@ -126,21 +149,24 @@ sub install {
 	my ($self,$object) = @_;
 	if(ref($object) eq 'slackget10::PackageList')
 	{
-		print "Do the job for a slackget10::PackageList\n";
+# 		print "[install] Do the job for a slackget10::PackageList\n";
 		foreach my $pack ( @{ $object->get_all() })
 		{
+# 			print "[install] sending ",$pack->get_id," to _install_package.\n";
 			$pack->status($self->_install_package($pack));
 		}
+# 		print "[install] end of the install loop.\n";
 	}
 	elsif(ref($object) eq 'slackget10::Package')
 	{
-		print "[install] Do the job for a slackget10::Package '$object'\n";
+# 		print "[install] Do the job for a slackget10::Package '$object'\n";
 		$object->status($self->_install_package($object));
 	}
 	else
 	{
 		return undef;
 	}
+# 	print "[slackget10::PkgTools DEBUG] all job processed.\n";
 }
 
 =head2 upgrade
@@ -159,10 +185,11 @@ sub upgrade {
 		my ($self,$pkg) = @_;
 		my $status = new slackget10::Status (codes => $self->{STATUS});
 		#$self->{CONF}->{common}->{'update-directory'}/".$server->shortname."/cache/
-		if( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
+		if( -e "$self->{CONF}->{common}->{'update-directory'}/package-cache/".$pkg->get_id.".tgz")
 		{
-			print "\tTrying to upgrade package: $self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz\n";
-			if(system("$self->{CONF}->{common}->{pkgtools}->{'upgradepkg-binary'} $self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")==0)
+			$self->_send_info('upgrade',$pkg->get_id());
+# 			print "\tTrying to upgrade package: $self->{CONF}->{common}->{'update-directory'}/package-cache/".$pkg->get_id.".tgz\n";
+			if(system("2>>$self->{CONF}->{common}->{'log'}->{'log-file'} $self->{CONF}->{common}->{pkgtools}->{'upgradepkg-binary'} $self->{CONF}->{common}->{'update-directory'}/package-cache/".$pkg->get_id.".tgz")==0)
 			{
 				$status->current(1);
 				return $status ;
@@ -182,7 +209,7 @@ sub upgrade {
 	my ($self,$object) = @_;
 	if(ref($object) eq 'slackget10::PackageList')
 	{
-		print "Do the job for a slackget10::PackageList\n";
+# 		print "Do the job for a slackget10::PackageList\n";
 		foreach my $pack ( @{ $object->get_all() })
 		{
 			$pack->status($self->_upgrade_package($pack));
@@ -190,7 +217,7 @@ sub upgrade {
 	}
 	elsif(ref($object) eq 'slackget10::Package')
 	{
-		print "Do the job for a slackget10::Package\n";
+# 		print "Do the job for a slackget10::Package\n";
 		$object->status($self->_upgrade_package($object));
 	}
 	else
@@ -215,10 +242,11 @@ sub remove {
 		my ($self,$pkg) = @_;
 		my $status = new slackget10::Status (codes => $self->{STATUS});
 		#$self->{CONF}->{common}->{'update-directory'}/".$server->shortname."/cache/
-		if( -e "$self->{CONF}->{common}->{'update-directory'}/".$pkg->getValue('package-source')."/cache/".$pkg->get_id.".tgz")
+		if( -e "$self->{CONF}->{common}->{'packages-history-dir'}/".$pkg->get_id)
 		{
-			print "\tTrying to remove package: ".$pkg->get_id."\n";
-			if(system("$self->{CONF}->{common}->{pkgtools}->{'removepkg-binary'} ".$pkg->get_id)==0)
+			$self->_send_info('remove',$pkg->get_id());
+# 			print "\tTrying to remove package: ".$pkg->get_id."\n";
+			if(system("2>>$self->{CONF}->{common}->{'log'}->{'log-file'} $self->{CONF}->{common}->{pkgtools}->{'removepkg-binary'} ".$pkg->get_id)==0)
 			{
 				$status->current(2);
 				return $status ;
@@ -238,7 +266,7 @@ sub remove {
 	my ($self,$object) = @_;
 	if(ref($object) eq 'slackget10::PackageList')
 	{
-		print "Do the job for a slackget10::PackageList\n";
+# 		print "Do the job for a slackget10::PackageList\n";
 		foreach my $pack ( @{ $object->get_all() })
 		{
 			$pack->status($self->_remove_package($pack));
@@ -246,7 +274,7 @@ sub remove {
 	}
 	elsif(ref($object) eq 'slackget10::Package')
 	{
-		print "Do the job for a slackget10::Package\n";
+# 		print "Do the job for a slackget10::Package\n";
 		$object->status($self->_remove_package($object));
 	}
 	else
@@ -255,30 +283,31 @@ sub remove {
 	}
 }
 
-#         <package id="imagemagick-6.1.9_0-i486-1">
-#                 <date hour="10:29:00" day-number="22" month-number="01" year="2005" />
-#                 <compressed-size>3339</compressed-size>
-#                 <package-source>slackware</package-source>
-#                 <location>./slackware/xap</location>
-#                 <version>6.1.9_0</version>
-#                 <name>imagemagick</name>
-#                 <uncompressed-size>12750</uncompressed-size>
-#                 <description>imagemagick (a robust collection of image processing tools)
-#                         ImageMagick is a collection of tools for manipulating and displaying
-#                 digital images.  It can merge images, transform image dimensions,
-#                 do screen captures, create animation sequences, and convert between
-#                 many different image formats.
-#                         ImageMagick was written by John Cristy of ImageMagick Studio.
-#                         Home page:  http://www.imagemagick.org/
-# 
-#                 </description>
-#                 <info-homepage> http://www.imagemagick.org/</info-homepage>
-#                 <signature-checksum>ff61e93f6c325f062dc319d265466aad</signature-checksum>
-#                 <checksum>aad2b267f0e49f88b1f8ac726be2d6e3</checksum>
-#                 <architecture>i486</architecture>
-#                 <package-location>slackware/xap/</package-location>
-#                 <package-version>1</package-version>
-#         </package>
+=head2 info_output
+
+Accessor to set/get the output medium to send informations about current operation. You must set a valid handle (STD*, filehandle, socket, etc.) or undef.
+
+You can get an undefined value if the handle is not set.
+
+Setting the output media activate the output system.
+
+=cut
+
+sub info_output
+{
+	return $_[1] ? $_[0]->{DATA}->{'info-output'}=$_[1] : $_[0]->{DATA}->{'info-output'};
+}
+
+=head2 connection_id
+
+Accessor to set/get the connection id of a connection to or from a slack-get daemon. This is here if the output handle is that kind of connection. Anyway this value must be true so set it to 1 if you want an output.
+
+=cut
+
+sub connection_id
+{
+	return $_[1] ? $_[0]->{DATA}->{'connection-id'}=$_[1] : $_[0]->{DATA}->{'connection-id'};
+}
 
 
 

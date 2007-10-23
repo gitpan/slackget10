@@ -13,11 +13,11 @@ slackget10::Local - A class to load the locales
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.7.1
 
 =cut
 
-our $VERSION = '0.6.1';
+our $VERSION = '0.7.1';
 
 =head1 SYNOPSIS
 
@@ -26,7 +26,7 @@ This class' purpose is to load and export the local.
     use slackget10::Local;
 
     my $local = slackget10::Local->new();
-    $local->Load('/usr/local/share/slack-get/local/francais/LC_MESSAGES');
+    $local->Load('/usr/local/share/slack-get/local/french.xml');
     print $local->Get('__SETTINGS') ;
 
 =cut
@@ -51,7 +51,7 @@ Can take an argument : the LC_MESSAGES file. In this case the constructor automa
 
 	my $local = new slackget10::Local();
 	or
-	my $local = new slackget10::Local('/usr/local/share/slack-get/local/francais/LC_MESSAGES');
+	my $local = new slackget10::Local('/usr/local/share/slack-get/local/french.xml');
 
 =head1 FUNCTIONS
 
@@ -59,7 +59,7 @@ Can take an argument : the LC_MESSAGES file. In this case the constructor automa
 
 Load the local from a given file
 
-	$local->Load('/usr/local/share/slack-get/local/francais/LC_MESSAGES') or die "unable to load local\n";
+	$local->Load('/usr/local/share/slack-get/local/french.xml') or die "unable to load local\n";
 
 Return undef if something goes wrong, 1 else.
 
@@ -104,12 +104,35 @@ Return the localized message of a given token :
 
 Return undef if the token doesn't exist.
 
+You can also pass extra arguments to this method, and if their is wildcards in the token they will be replace by those values. Wildcards are %1, %2, ..., %x.
+
+Here is and example :
+ 
+	# The token is :
+	# __NETWORK_CONNECTION_ERROR = Error, cannot connect to %1, the server said ``%2''.
+	my $localized_token = $local->Get('__NETWORK_CONNECTION_ERROR', '192.168.0.42', 'Connection not authorized');
+	print "$localized_token\n";
+	# $localized_token contains the string "Error, cannot connect to 192.168.0.42, the server said ``Connection not authorized''."
+
+
 =cut
 
 sub Get {
-	my ($self,$token) = @_ ;
-# 	return undef unless(defined($token));
-	return $self->{DATA}->{$token}->{'content'};
+	my ($self,$token,@args) = @_ ;
+	if(@args)
+	{
+		@args = (0,@args);
+		my $tmp = $self->{DATA}->{$token}->{'content'};
+		for(my $k=1;$k<=$#args; $k++)
+		{
+			$tmp =~ s/%$k/$args[$k]/g ;
+		}
+		return $tmp;
+	}
+	else
+	{
+		return $self->{DATA}->{$token}->{'content'};
+	}
 }
 
 sub to_XML
@@ -132,7 +155,7 @@ sub to_XML
 
 =head2 name
 
-Accessor for the name pf the Local (langpack).
+Accessor for the name of the Local (langpack).
 
 	print "The current langpack name is : ", $local->name,"\n";
 	$local->name('Japanese'); # Set the name of the langpack to 'Japanese'.

@@ -51,7 +51,16 @@ sub new
 	my ($class,$file) = @_ ;
 	return undef unless(-e $file && -r $file);
 	my $self= XMLin($file) or return undef;
+# 	use Data::Dumper;
+# 	print Dumper($self);
 	return undef unless(defined($self->{common}));
+	if(exists($self->{'plugins'}->{'list'}->{'plug-in'}->{'id'}) && defined($self->{'plugins'}->{'list'}->{'plug-in'}->{'id'}))
+	{
+		my $tmp = $self->{'plugins'}->{'list'}->{'plug-in'};
+		delete($self->{'plugins'}->{'list'}->{'plug-in'});
+		$self->{'plugins'}->{'list'}->{'plug-in'}->{$tmp->{'id'}} = $tmp;
+		delete($self->{'plugins'}->{'list'}->{'plug-in'}->{$tmp->{'id'}}->{'id'});
+	}
 	bless($self,$class);
 	return $self;
 }

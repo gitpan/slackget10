@@ -3,17 +3,21 @@ package slackget10::Package;
 use warnings;
 use strict;
 
+require slackget10::MD5;
+use Data::Dumper;
+
 =head1 NAME
 
 slackget10::Package - This class is the internal representation of a package for slack-get 1.0
 
 =head1 VERSION
 
-Version 1.0.0
+Version 1.0.1
 
 =cut
 
-our $VERSION = '1.0.0';
+our @ISA = qw( slackget10::MD5 );
+our $VERSION = '1.0.2';
 
 =head1 SYNOPSIS
 
@@ -24,6 +28,12 @@ This module is used to represent a package for slack-get
     my $package = slackget10::Package->new('package-1.0.0-noarch-1');
     $package->setValue('description',"This is a test of the slackget10::Package object");
     $package->fill_object_from_package_name();
+
+This class inheritate from slackget10::MD5, so you can use :
+
+	$sgo->installpkg($package) if($package->verify_md5);
+
+Isn't it great ?
 
 =head1 CONSTRUCTOR
 
@@ -49,6 +59,7 @@ sub new
 	return undef unless($id);
 	my $self={%args};
 	$self->{ROOT} = $id ;
+	$self->{STATS} = {hw => [], dwc => 0};
 	bless($self,$class);
 	$self->fill_object_from_package_name();
 	return $self;
@@ -68,10 +79,42 @@ This method overwrite existing value.
 
 sub merge {
 	my ($self,$package) = @_ ;
+	return unless($package);
 	foreach (keys(%{$package->{PACK}})){
 		$self->{PACK}->{$_} = $package->{PACK}->{$_} ;
 	}
+	$self->{STATS} = {hw => [@{ $package->{STATS}->{hw} }], dwc => $package->{STATS}->{dwc}} ;
 	$package = undef;
+}
+
+=head2 is_heavy_word
+
+This method return true (1) if the first argument is an "heavy word" and return false (0) otherwise.
+
+	print "heavy word found !\n" if($package->is_heavy_word($request[$i]));
+
+=cut
+
+sub is_heavy_word
+{
+	my ($self,$w) = @_ ;
+	return unless($w);
+	return 1 if($self->{PACK}->{statistics}->{hw} =~ /\Q:$w:\E/);
+	return 0;
+}
+
+=head2 get_statistic
+
+Return a given statistic about the description of the package. Currently available are : dwc (description words count) and hw (heavy words,  a list of important words).
+
+Those are for the optimisation of the search speed.
+
+=cut
+
+sub get_statistic
+{
+	my ($self,$w) = @_ ;
+	return $self->{PACK}->{statistics}->{$w};
 }
 
 =head2 compare_version
@@ -170,10 +213,27 @@ sub fill_object_from_package_name{
 		$self->setValue('package-version',$4);
 # 		$self->setValue('package-maintener',$5) if(!defined($self->getValue('package-maintener')));
 	}
+	elsif($self->{ROOT}=~ /^(.*)-([^-]+)-(i[0-9]86|noarch)-(\d{1,2})(\.tgz)?$/)
+	{
+		$self->setValue('name',$1);
+		$self->setValue('version',$2);
+		$self->setValue('architecture',$3);
+		$self->setValue('package-version',$4);
+		$self->setValue('package-maintener','Slackware team') if(defined($self->{SOURCE}) && $self->{SOURCE}=~/^slackware$/i);
+	}
+	elsif($self->{ROOT}=~ /^(.*)-([^-]+)-(i[0-9]86|noarch)-(\d{1,2})(\w*)(\.tgz)?$/)
+	{
+		$self->setValue('name',$1);
+		$self->setValue('version',$2);
+		$self->setValue('architecture',$3);
+		$self->setValue('package-version',$4);
+# 		$self->setValue('package-maintener',$5) if(!defined($self->getValue('package-maintener')));
+	}
 	else
 	{
 		$self->setValue('name',$self->{ROOT});
 	}
+	$self->{STATS}->{hw} = [split(/-/,$self->getValue('name'))];
 }
 
 =head2 extract_informations
@@ -226,6 +286,10 @@ sub extract_informations {
 			$self->setValue('description',$1);
 			$self->{PACK}->{description}=~ s/\n/\n\t\t/g;
 			$self->clean_description ;
+			my @t = split(/\s/,$self->getValue('description'));
+			$self->{STATS}->{dwc} = scalar(@t);
+# 			print "[DEBUG] slackget10::Package -> package ",$self->get_id()," ($self) have $self->{STATS}->{dwc} words in its description.\n";
+# 			print Dumper($self);<STDIN>;
 		}
 	}
 }
@@ -240,9 +304,11 @@ remove the "<package_name>: " string in front of each line of the description. R
 
 sub clean_description{
 	my $self = shift;
-	if($self->{PACK}->{name} && $self->{PACK}->{description})
+	if($self->{PACK}->{name} && defined($self->{PACK}->{description}) && $self->{PACK}->{description})
 	{
-		$self->{PACK}->{description}=~ s/\Q$self->{PACK}->{name}:\E\s//ig;
+		$self->{PACK}->{description}=~ s/\s*\Q$self->{PACK}->{name}\E\s*:\s*/ /ig;
+# 		my @descr  = split(/\s*\Q$self->{PACK}->{name}\E\s*:/,$self->{PACK}->{description});
+# 		$self->{PACK}->{description} = join(' ',@descr);
 		$self->{PACK}->{description}=~ s/\t{4,}/\t\t\t/g;
 		$self->{PACK}->{description}=~ s/\n\s+\n/\n/g;
 	}
@@ -348,6 +414,7 @@ return the package as an XML encoded string.
 sub to_XML
 {
 	my $self = shift;
+	
 	my $xml = "\t<package id=\"$self->{ROOT}\">\n";
 	if(defined($self->{STATUS}) && ref($self->{STATUS}) eq 'slackget10::Status')
 	{
@@ -363,7 +430,18 @@ sub to_XML
 		$self->{TMP}->{'date'}=$self->{PACK}->{'date'};
 		delete($self->{PACK}->{'date'});
 	}
+	if($self->{STATS}){
+		if($self->{STATS}->{dwc} == 0 && scalar(@{$self->{STATS}->{hw}}) > 0 && defined($self->getValue('description')) ){
+			my @t = split(/\s/,$self->getValue('description'));
+			$self->{STATS}->{dwc} = scalar(@t);
+		}
+# 		print "[slackget10::Package->to_XML] $self->{ROOT} ($self) : <statistics dwc=\"".$self->{STATS}->{dwc}."\" hw=\":".join(':',@{$self->{STATS}->{hw}}).":\" />\n";
+# 		print Dumper($self);<STDIN>;
+		
+		$xml .= "\t\t<statistics dwc=\"".$self->{STATS}->{dwc}."\" hw=\":".join(':',@{$self->{STATS}->{hw}}).":\" />\n";
+	}
 	foreach (keys(%{$self->{PACK}})){
+		next if(/^_[A-Z_]+$/);
 		$xml .= "\t\t<$_><![CDATA[$self->{PACK}->{$_}]]></$_>\n" if(defined($self->{PACK}->{$_}));
 	}
 	$self->{PACK}->{'package-date'}=$self->{TMP}->{'package-date'};
@@ -538,6 +616,7 @@ You also can set the status, by passing a slackget10::Status object, to this met
 	$package->status($status_object);
 
 This method return 1 if all goes well and undef else.
+
 =cut
 
 sub status {
@@ -674,7 +753,7 @@ sub location{
 
 return the list of conflicting pakage.
 
-	$string = $apckage->conflict();
+	$string = $package->conflict();
 
 =cut
 

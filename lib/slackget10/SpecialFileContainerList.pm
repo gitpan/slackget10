@@ -28,7 +28,8 @@ This class is a container of slackget10::SpecialFileContainer object, and allow 
     $containerlist->add($container);
     my $conainer = $containerlist->get($index);
     my $container = $containerlist->Shift();
-    
+
+Please read the slackget10::List documentation for more informations (L<slackget10::List>).
 
 =head1 CONSTRUCTOR
 
@@ -54,95 +55,6 @@ sub new
 	bless($self);#,$class
 	return $self;
 }
-# 
-# =head1 FUNCTIONS
-# 
-# =head2 add
-# 
-# Add the package passed in argument to the list. The argument must be a slackget10::SpecialFileContainer object
-# 
-# 	$containerlist->add($package);
-# 
-# =cut
-# 
-# sub add {
-# 	my ($self,$container) = @_ ;
-# 	
-# 	return undef if(ref($container) ne 'slackget10::SpecialFileContainer');
-# # 	print "adding $container to the $self->{LIST} list of $self object\n";
-# 	push @{$self->{LIST}}, $container;
-# 	return 1;
-# }
-# 
-# =head2 get
-# 
-# return the $index slackget10::SpecialFileContainer object in the list
-# 
-# 	$containerlist->get($index);
-# 
-# =cut
-# 
-# sub get {
-# 	my ($self,$idx) = @_ ;
-# 	return $self->{LIST}->[$idx];
-# }
-# 
-# =head2 get_all
-# 
-# return a reference on an array containing all packages.
-# 
-# 	$arrayref = $containerlist->get_all();
-# 
-# =cut
-# 
-# sub get_all {
-# 	my $self = shift ;
-# 	return $self->{LIST};
-# }
-# 
-# =head2 Shift
-# 
-# Same as the Perl shift. Shifts of and return the first slackget10::SpecialFileContainer of the slackget10::SpecialFileContainerList;
-# 
-# 	$package = $containerlist->Shift();
-# 
-# =cut
-# 
-# sub Shift {
-# 	my ($self) = @_ ;
-# 	return shift(@{$self->{LIST}});
-# }
-# 
-# =head2 to_XML
-# 
-# return an XML encoded string.
-# 
-# 	$xml = $containerlist->to_XML();
-# 
-# =cut
-# 
-# sub to_XML
-# {
-# 	my $self = shift;
-# 	my $xml = "<slack-get>\n";
-# 	foreach (@{$self->{LIST}}){
-# # 		print "[$self] XMLization of $_\n";
-# 		$xml .= $_->to_XML();
-# 	}
-# 	$xml .= "</slack-get>\n";
-# 	return $xml;
-# }
-# 
-# =head2 to_string
-# 
-# Alias for to_XML()
-# 
-# =cut
-# 
-# sub to_string{
-# 	my $self = shift;
-# 	$self->to_XML();
-# }
 
 
 =head1 AUTHOR

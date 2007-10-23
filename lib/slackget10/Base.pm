@@ -7,8 +7,8 @@ require XML::Simple ;
 require slackget10::PackageList;
 require slackget10::Package;
 require slackget10::File;
-require slackget10::Server;
-require slackget10::ServerList ;
+require slackget10::Media;
+require slackget10::MediaList ;
 require slackget10::Date ;
 
 
@@ -18,11 +18,11 @@ slackget10::Base - A module which centralize some base methods usefull to slack-
 
 =head1 VERSION
 
-Version 1.0.0
+Version 1.0.2
 
 =cut
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.0.2';
 $XML::Simple::PREFERRED_PARSER='XML::Parser' ;
 
 =head1 SYNOPSIS
@@ -32,7 +32,7 @@ This module centralize bases tasks like package directory compilation, etc. This
     use slackget10::Base;
 
     my $base = slackget10::Base->new();
-    my $packagelist = $base->compil_package_directory('/var/log/packages/');
+    my $packagelist = $base->compil_packages_directory('/var/log/packages/');
     $packagelist = $base->load_list_from_xml_file('installed.xml');
 
 =cut
@@ -40,7 +40,7 @@ This module centralize bases tasks like package directory compilation, etc. This
 sub new
 {
 	my ($class,$config) = @_ ;
-	return undef if(!defined($config) && $config ne 'slackget10::Config') ;
+	return undef if(!defined($config) or ref($config) ne 'slackget10::Config') ;
 	my $self = {CONF => $config};
 	bless($self,$class);
 	return $self;
@@ -102,18 +102,18 @@ sub dir2files
 	
 	foreach my $a (@_)
 	{
-# 		print "[dir2files] treating $a\n";
+# 		print STDERR "[DEBUG] [dir2files] treating $a\n";
 		unless(-d $a or -l $a)
 		{
-# 			print "\t[dir2files] file $a is not a directory nor a symlink, pushing on files stack\n";
+# 			print STDERR "\t[DEBUG] [dir2files] file $a is not a directory nor a symlink, pushing on files stack\n";
 			push @f_files,$a;
 		}
 		else
 		{
-# 			print "\t[dir2files] file $a is a directory or a symlink\n";
+# 			print STDERR "\t[DEBUG] [dir2files] file $a is a directory or a symlink\n";
 			unless(-l $a)
 			{
-# 				print "\t[dir2files] file $a is a directory : recurse\n";
+# 				print STDERR "\t[DEBUG] [dir2files] file $a is a directory : recurse\n";
 				@f_files = (@f_files,$self->dir2files($self->ls($a)));
 			}
 # 			else
@@ -129,86 +129,158 @@ sub dir2files
 
 take a directory where are store installed packages files and return a slackget10::PackageList object
 
-	my $packagelist = $base->compil_package_directory('/var/log/packages/');
+	my $packagelist = $base->compil_packages_directory('/var/log/packages/');
 
 =cut
 
 sub compil_packages_directory
 {
-	my ($self,$dir) = @_;
-# 	print "[DEBUG] compiling directory \"$dir\"\n";
+	my ($self,$dir,$packagelist) = @_;
+# 	print STDERR "[DEBUG] [compil_packages_directory] getting the following packages list : \"$packagelist\"\n";
+# 	print STDERR "[DEBUG] [compil_packages_directory] compiling directory \"$dir\"\n";
 	my @files = $self->dir2files($dir);
-# 	print "[DEBUG] number of entry in files array : ",scalar(@files),"\n";
-# 	print "[DEBUG] entry in \@files :\n",join "\n",@files,"\n";
+	$|=1;
+	die "FATAL: The directory \"$dir\" is empty or contains no packages.\n" if(scalar(@files) < 1);
+# 	print STDERR "[DEBUG] number of entry in files array : ",scalar(@files),"\n";
+# 	print STDERR "[DEBUG] entry in \@files :\n",join "\n",@files,"\n";
 	my $ref;
-	my $packagelist = new slackget10::PackageList('encoding'=>$self->{CONF}->{common}->{'file-encoding'}) ;
-	foreach (@files)
+	if($packagelist)
 	{
-# 		print "[DEBUG] in slackget10::Base, method compil_package_directory file-encoding=$self->{CONF}->{common}->{'file-encoding'}\n";
-		my $sg_file = new slackget10::File ($_,'file-encoding' => $self->{CONF}->{common}->{'file-encoding'}) ;
-		die $! unless $sg_file;
-		my @file = $sg_file->Get_file();
-		$_ =~ /^.*\/([^\/]*)$/;
-# 		print "[DEBUG] instanciate new package : \"$1\"\n";
-		$ref->{$1}= new slackget10::Package ($1);
-		next unless($ref->{$1}) ;
-# 		print "[DEBUG] package reference is $ref->{$1}\n";
-		my $pack = $ref->{$1};
-		for(my $k=0;$k<=$#file;$k++)
+		my $tmp_packagelist = new slackget10::PackageList('encoding'=>$self->{CONF}->{common}->{'file-encoding'});
+		while (defined(my $p = $packagelist->Shift()))
 		{
-			if($file[$k] =~ /^PACKAGE NAME:\s+(.*)$/)
+# 			print "treat : $p (",$p->get_id(),")\n";
+# 			<STDIN>;
+			if(defined($p) && -e $self->{CONF}->{common}->{'packages-history-dir'}.'/'.$p->get_id())
 			{
-				my $name = $1;
-				unless(defined($pack->getValue('name')) or defined($pack->getValue('version')) or defined($pack->getValue('architecture')) or defined($pack->getValue('package-version')))
-				{
-					print "[DEBUG] Package forced to be renamed.\n";
-					$pack->_setId($name);
-					$pack->fill_object_from_package_name();
-				}
-				
-			}
-			elsif($file[$k] =~ /^COMPRESSED PACKAGE SIZE:\s+(.*) K$/)
-			{
-				$pack->setValue('compressed-size',$1);
-			}
-			elsif($file[$k] =~ /^UNCOMPRESSED PACKAGE SIZE:\s+(.*) K$/)
-			{
-				$pack->setValue('uncompressed-size',$1);
-			}
-			elsif($file[$k] =~ /^PACKAGE LOCATION:\s+(.*) K$/)
-			{
-				$pack->setValue('location',$1);
-			}
-			elsif($file[$k]=~/PACKAGE DESCRIPTION:/)
-			{
-				my $tmp = "";
-				$k++;
-				while($file[$k]!~/FILE LIST:/)
-				{
-					$tmp .= "\t\t\t$file[$k]";
-					$k++;
-				}
-				$pack->setValue('description',"$tmp\n\t\t");
-				### NOTE: On my system, with 586 packages installed the difference between with or without including the file list is very important
-				### NOTE: with the file list the installed.xml file size is near 11 MB
-				### NOTE: without the file list, the size is only 400 KB !!
-				### NOTE: So I have decided that the file list is not include by default
-				if(defined($self->{'include-file-list'}))
-				{
-					$pack->setValue('file-list',join("\t\t\t",@file[($k+1)..$#file])."\n\t\t");
-				}
-				last;
-				
-				
-				
+# 				print "adding $p\n";
+				$tmp_packagelist->add( $p );
 			}
 		}
-		$pack->clean_description();
-		$pack->grab_info_from_description();
-		$packagelist->add($pack);
-		$sg_file->Close();
-		
+		$tmp_packagelist->index_list ;
+		$packagelist=$tmp_packagelist;
 	}
+# 	print join(' :: ', $packagelist->get_indexes());
+	$packagelist = new slackget10::PackageList('encoding'=>$self->{CONF}->{common}->{'file-encoding'}) unless($packagelist);
+# 	print STDERR "slackget10::PackageList reference : $packagelist\n";
+	my $pg_idx=0;
+	my $mark = int(scalar(@files)/20);
+	my $msg = "[slack-get] compiling $dir (1 mark = $mark packages) : [";
+	printf($msg);
+	print " "x20 ;
+	my $pstr= '0 %';
+	print "] $pstr";
+	my $mark_idx=0;
+	my $percent_idx=0;
+	foreach (@files)
+	{
+# 		NOTE: The system call is very slow compared to the built-in regular expressions ;)
+# 		$_ = `basename $_`;
+# 		chomp;
+		$_ =~ /^.*\/([^\/]*)$/;
+		#my $file_md5 = `LC_ALL=C md5sum $_ | awk '{print \$1}'`;
+		#chomp($file_md5);
+# 		print "searching if $1 is already indexed in the list : ",$packagelist->get_indexed($_),"\n";
+		if(!defined($packagelist->get_indexed($1)) )#or ($packagelist->get_indexed($_)->getValue('package-file-checksum') ne $file_md5))
+		{
+	# 		print STDERR "[DEBUG] in slackget10::Base, method compil_packages_directory file-encoding=$self->{CONF}->{common}->{'file-encoding'}\n";
+			my $sg_file = new slackget10::File ($_,'file-encoding' => $self->{CONF}->{common}->{'file-encoding'}) ;
+			die $! unless $sg_file;
+			my @file = $sg_file->Get_file();
+			
+# 			print STDERR "[DEBUG] instanciate new package : \"$1\"\n";
+			$ref->{$1}= new slackget10::Package ($1);
+			next unless($ref->{$1}) ;
+	# 		print STDERR "[DEBUG] package reference is $ref->{$1}\n";
+			my $pack = $ref->{$1};
+			for(my $k=0;$k<=$#file;$k++)
+			{
+				# NOTE: trying to fix a bug reporting by Adi Spivak
+				next if(!defined($file[$k]));
+				if($file[$k] =~ /^PACKAGE NAME:\s+(.*)$/)
+				{
+					my $name = $1;
+					unless(defined($pack->getValue('name')) or defined($pack->getValue('version')) or defined($pack->getValue('architecture')) or defined($pack->getValue('package-version')))
+					{
+	# 					print STDERR "[DEBUG] Package forced to be renamed.\n";
+						$pack->_setId($name);
+						$pack->fill_object_from_package_name();
+					}
+					
+				}
+				elsif($file[$k] =~ /^COMPRESSED PACKAGE SIZE:\s+(.*) K$/)
+				{
+	# 				print STDERR "[DEBUG] setting param 'compressed-size' to $1\n";
+					$pack->setValue('compressed-size',$1);
+				}
+				elsif($file[$k] =~ /^UNCOMPRESSED PACKAGE SIZE:\s+(.*) K$/)
+				{
+	# 				print STDERR "[DEBUG] setting param 'uncompressed-size' to $1\n";
+					$pack->setValue('uncompressed-size',$1);
+				}
+				elsif($file[$k] =~ /^PACKAGE LOCATION:\s+(.*) K$/)
+				{
+	# 				print STDERR "[DEBUG] setting param 'location' to $1\n";
+					$pack->setValue('location',$1);
+				}
+				elsif($file[$k]=~/PACKAGE DESCRIPTION:/)
+				{
+					my $tmp = "";
+					$k++;
+					while($file[$k]!~/FILE LIST:/ or $file[$k]!~/\.\//)
+					{
+						# NOTE: this line was originally added to fix the bug reported by Adi Spivak but it doesn't work well
+						last if(!defined($file[$k]) or $file[$k]=~ /^\.\//);
+						$tmp .= "\t\t\t$file[$k]";
+						$k++;
+					}
+	# 				print STDERR "[DEBUG] setting param 'description' to $tmp\n";
+					$pack->setValue('description',"$tmp\n\t\t");
+					### NOTE: On my system, with 586 packages installed the difference between with or without including the file list is very important
+					### NOTE: with the file list the installed.xml file size is near 11 MB
+					### NOTE: without the file list, the size is only 400 KB !!
+					### NOTE: So I have decided that the file list is not include by default
+					if(defined($self->{'include-file-list'}))
+					{
+						$pack->setValue('file-list',join("\t\t\t",@file[($k+1)..$#file])."\n\t\t");
+					}
+					last;	
+				}
+			}
+	# 		print STDERR "[DEBUG] calling slackget10::Package->clean_description() on package $pack\n";
+			$pack->clean_description();
+	# 		print STDERR "[DEBUG] calling slackget10::Package->grab_info_from_description() on package $pack\n";
+			$pack->grab_info_from_description();
+# 			$pack->setValue('package-file-checksum',$file_md5);
+	# 		print STDERR "[DEBUG] calling slackget10::PackageList->add() on package $pack\n";
+			$packagelist->add($pack);
+			$sg_file->Close();
+			
+		}
+# 		else
+# 		{
+# 			print STDERR "[DEBUG] package $_ skipped (already in cache)\n";
+# 		}
+		$pg_idx++;
+		$percent_idx++;
+		print "\b" x length($pstr);
+		$pstr = $percent_idx/scalar(@files) * 100;
+		$pstr =~ /^([^\.]+)/;
+		$pstr = $1 ;
+		$pstr .= " %";
+		print $pstr;
+		if($pg_idx == $mark)
+		{
+			$mark_idx++;
+			print "\b"x (40 + length($msg));
+			print $msg;
+			print '#' x $mark_idx;
+			print ' ' x (20 - $mark_idx);
+			print "] $pstr";
+			$pg_idx=0;
+		}
+	}
+	print " (",scalar(@files)," packages examined)\n";
 	return $packagelist;
 }
 
@@ -265,10 +337,12 @@ sub load_packages_list_from_xml_file {
 	my $ref = {};
 	my $start = time();
 	$|++ ;
-	print "[DEBUG] Going to parse '$file'\n";
+# 	print "[DEBUG slackget10::Base->load_packages_list_from_xml_file()] Going to parse '$file'\n";
+	printf("[slack-get] loading packages list...");
 	$XML::Simple::PREFERRED_PARSER='XML::Parser' ;
 	my $xml_in = XML::Simple::XMLin($file,KeyAttr => {'package' => 'id'});
-	print "[DEBUG] '$file' correctly parsed in ", time() - $start," sec.\n" ;
+# 	print "[DEBUG slackget10::Base->load_packages_list_from_xml_file()] '$file' correctly parsed in ", time() - $start," sec.\n" ;
+	print "ok (loaded in ", time() - $start," sec.)\n";
 	foreach my $group (keys(%{$xml_in})){
 		my $package_list = new slackget10::PackageList ;
 		foreach my $pack_name (keys(%{$xml_in->{$group}->{'package'}})){
@@ -292,25 +366,39 @@ sub load_packages_list_from_xml_file {
 }
 
 
-=head2 load_server_list_from_xml_file
+=head2 load_media_list_from_xml_file
 
-Load a server list from a servers.xml file.
+Load a server list from a medias.xml file.
 
 	$serverlist = $base->load_server_list_from_xml_file('servers.xml');
 
 =cut
 
-sub load_server_list_from_xml_file {
+sub load_media_list_from_xml_file {
 	my ($self,$file) = @_;
-	my $server_list = new slackget10::ServerList ;
-	my $xml_in = XML::Simple::XMLin($file,KeyAttr => {'server' => 'id'});
-	foreach my $server_name (keys(%{$xml_in->{'server'}})){
-		my $server = new slackget10::Server ($server_name);
-		$server->fill_object_from_xml( $xml_in->{server}->{$server_name} );
+	print "[slack-get] loading media file : $file\n";
+	my $server_list = new slackget10::MediaList ;
+	my $xml_in = XML::Simple::XMLin($file,KeyAttr => {'media' => 'id'});
+#  	require Data::Dumper ;
+#  	print Data::Dumper::Dumper($xml_in);
+	foreach my $server_name (keys(%{$xml_in->{'media'}})){
+		my $server = new slackget10::Media ($server_name);
+		$server->fill_object_from_xml( $xml_in->{media}->{$server_name} );
 # 		$server->print_info ;print "\n\n";
 		$server_list->add($server);
 	}
 	return $server_list;
+}
+
+=head2 load_server_list_from_xml_file
+
+An allias for load_media_list_from_xml_file(). Given for backward compatibility
+
+=cut
+
+sub load_server_list_from_xml_file{
+	my ($self,$file) = @_;
+	$self->load_media_list_from_xml_file($file);
 }
 
 

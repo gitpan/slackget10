@@ -43,3 +43,14 @@ Revision history for slackget10
 	- Made some modifications in slack-getd
 	- Add some functions and method (in slackget10::Base among other)
 	- Last but not least I have update all install script (MANIFEST, Build.PL, etc.) and they now are complete :-)
+
+0.10 Tue Oct 23 21:40:35 CEST 2007
+	- Loads of changes and bugfixes
+	- Removed the followings class from the module :
+		* slackget10::Server
+		* slackget10::ServerList
+		* slackget10::Log* (the new architecture from the 1.0.0-alpha2 use POE::Component::Logger)
+	- Removed the followings unused classes :
+		* slackget10::Networking
+		* slackget10::Network::Daemon
+	- fixes the test suite

@@ -9,7 +9,7 @@ slackget10::Network::Reponse - The response object for slackget10::Network class
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.9.2
 
 =cut
 

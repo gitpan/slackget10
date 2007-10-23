@@ -10,11 +10,11 @@ slackget10::Network - A class for network communication
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.7.3
 
 =cut
 
-our $VERSION = '0.5.8';
+our $VERSION = '0.7.3';
 
 =head1 SYNOPSIS
 
@@ -23,6 +23,7 @@ This class' purpose is to make all network dialog transparent. Instead of sendin
     use slackget10::Network;
 
     my $net = slackget10::Network->new(
+    	handle_responses => 1,
     	socket => IO::Socket::INET->new(
 		PeerAddr => 192.168.0.10,
 		PeerPort => 42000)
@@ -51,6 +52,17 @@ In the same way they all handle network exceptions from remote daemon.
 sub new
 {
 	my ($class,%args) = @_ ;
+	sub _create_random_id
+	{
+		srand (time ^ $$ ^ unpack "%L*", `ps axww | gzip`);
+		my $newpass='';
+		for (my $k=1;$k<=56;$k++)
+		{
+			my $lettre = ('a'...'z',1...9)[35*rand];
+			$newpass.=$lettre;
+		}
+		return $newpass;
+	}
 	return undef unless(defined($args{'socket'})) ;
 	return undef unless($args{'socket'});
 	my $self={
@@ -60,6 +72,8 @@ sub new
 		on_choice => \&on_choice,
 		on_info => \&on_info
 	};
+	$self->{handle_responses} = undef;
+	$self->{handle_responses} = $args{handle_responses} if(exists($args{handle_responses}));
 	$self->{'on_error'} = $args{'on_error'} if($args{'on_error'} && ref($args{'on_error'}) eq 'CODE') ;
 	$self->{'on_success'} = $args{'on_success'} if($args{'on_success'} && ref($args{'on_success'}) eq 'CODE') ;
 	$self->{'on_choice'} = $args{'on_choice'} if($args{'on_choice'} && ref($args{'on_choice'}) eq 'CODE') ;
@@ -69,7 +83,9 @@ sub new
 	$self->{SOCKET} = $args{'socket'} ;
 	$self->{TIMEOUT} = 3;
 	$self->{TIMEOUT} = $args{'timeout'} if(defined($args{'timeout'})) ;
+	$self->{CONNID} = _create_random_id() ;
 	bless($self,$class);
+	$self->_setconnectionid() if(!$args{'dont-set-connection-id'});
 	return $self;
 }
 
@@ -89,6 +105,12 @@ The constructor can take the followings arguments :
 
 B<socket> : a IO::Socket::INET wich is connected to the remote slack-getd
 
+B<handle_responses> : if this parameter is defined the slackget10::Network class instance will handle the network answer (default: undef). 
+
+WARNING: if you use this class on a GUI you will prefer to handle protocol by yourself because this class freeze a GUI. The other possibility is to use the network tasks manager class of slack-get (this class has been recoded for this manager, you can read L<slackget10::GUI::Qt::operationsProcessor> for more informations).
+
+WARNING 2 : For the moment, this class can only handle responses when you use an IO::Socket socket (no support for Qt::Socket yet).
+
 B<slackget_object> : a reference to a valide slackget10 object.
 
 B<on_error> [handler] : a CODE reference to a sub which will be call on each error message returned by the server. This sub must take a string (the error message) as argument.
@@ -97,7 +119,9 @@ B<on_success> [handler] : a CODE reference to a sub which will be call on each s
 
 B<on_unknow> [handler] : a CODE reference to a sub which will be call on each unknown command message returned by the remote slack-getd. This sub must take a string (the error message) as argument.
 
-B<on_choice> [handler] : a CODE reference to a sub wich will be call each time a choice is needed. This sub must take a reference to an array as first argument and the whole XML string which represent the choice as second argument. The arrayref is where the treatment method will put the result of the choice. Please look at the source code of the on_choice method for more informations.
+B<on_choice> [handler] : a CODE reference to a sub wich will be call each time a choice is needed. This sub must take a whole XML string which represent the choice as argument. Please look at the source code of the on_choice method for more informations.
+
+B<on_info> [handler] : a CODE reference to a sub wich will be call each time the daemon give us an information. This sub must take as argument : an IP adresse (string), an info level (integer) and a message (string). Please remember that this message is only half process : this class extract the IP adresse of the remote daemon, the info level and the message, but the message itself can contains other informations which are not yet process (like "progress" messages).
 
 There is also one special event : 'end' which is not hookable. It may be in the futur but this event is send when all treatment and data relative to the last command are terminate (but there is no information about the state in this event). It seems that this is usefull only to this module's methods.
 
@@ -109,41 +133,143 @@ All methods return a slackget10::Network::Response (L<slackget10::Network::Respo
 
 =cut
 
+=head2 _setconnectionid
+
+Set the id of the connection. The id is generate by the constructor and must not be modified. This method is automatically called by the constructor and is mostly private.
+
+	$net->_setconnectionid() ;
+
+=cut
+
+sub _setconnectionid
+{
+	my $self = shift;
+	$self->send_data("setconnectionid:$self->{CONNID}\n") or die "FATAL: cannot set the connection ID\n";
+}
+
+=head2 send_data
+
+send a given message to the remote daemon. This method is mostly for private use.
+
+	$net->send_data("get_installed_list") or die "cannot send get_installed_list\n";
+
+=cut
+
+sub send_data
+{
+	my ($self,$message) = @_ ;
+	# TODO : finir de coder cette fonction
+	my $socket = $self->{SOCKET} ;
+	chomp $message;
+	if(ref($socket) =~ /IO::Socket/)
+	{
+		print $socket "$message\n" or return undef;
+	}
+	elsif(ref($socket) =~ /Qt::Socket/)
+	{
+		$socket->flush ;
+		my $sent = $socket->writeBlock("$message\n", length("$message\n"));
+# 		print "[slackget10::Network] sent $sent/".length("$message\n")." bytes through the QSocket message was \"$message\n\"\n";
+		warn "Error while sending data through the QSocket.\n" if($sent == -1 ) ;
+		return undef if($sent == -1 ) ;
+	}
+	else
+	{
+		return undef;
+	}
+	return 1;
+}
+
 sub _handle_protocol
 {
 	my $self = shift ;
+	my $addr='0.0.0.0:0';
+	if(ref($self->{SOCKET}) =~ /IO::Socket/)
+	{
+		$addr = $self->{SOCKET}->peerhost();
+	}
+	elsif(ref($self->{SOCKET}) =~ /Qt::Socket/)
+	{
+		$addr = $self->{SOCKET}->peerAddress()->toString() if($self->{SOCKET}->peerAddress());
+	}
 # 	my $mess = shift;
-	if($_[0]=~/^error:\s*(.*)/)
+	if($_[0]=~/^error:$self->{CONNID}:\s*(.*)/)
 	{
-		print "Handling protocol : error msg calling $self->{'on_error'}\n";
-		$self->{'on_error'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		print "[slackget10::Network DEBUG] Handling protocol : error msg calling $self->{'on_error'}\n";
+		$self->{'on_error'}->("[$addr] $1");
 		$_[0] =~ s/.*//g;
+		return 2;
 	}
-	elsif($_[0]=~/^success:\s*(.*)/)
+	elsif($_[0]=~/^success:$self->{CONNID}:\s*(.*)/)
 	{
-		print "Handling protocol : success msg calling $self->{'on_success'}\n";
-		$self->{'on_success'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		print "[slackget10::Network DEBUG] Handling protocol : success msg calling $self->{'on_success'}\n";
+		$self->{'on_success'}->("[$addr] $1");
 		$_[0] =~ s/.*//g;
+		return 4;
 	}
-	elsif($_[0]=~/^unknown_said:\s*(.*)/)
+	elsif($_[0]=~/^unknown_said:$self->{CONNID}:\s*(.*)/)
 	{
-		print "Handling protocol : unknow msg calling $self->{'on_unknow'}\n";
-		$self->{'on_unknow'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		print "[slackget10::Network DEBUG] Handling protocol : unknow msg calling $self->{'on_unknow'}\n";
+		$self->{'on_unknow'}->("[$addr] $1");
 		$_[0] =~ s/.*//g;
+		return 2;
 	}
-	elsif($_[0]=~/^choice:\s*(.*)/)
+	elsif($_[0]=~/^choice:$self->{CONNID}:\s*(.*)/)
 	{
-		print "Handling protocol : choice msg calling $self->{'on_choice'}\n";
-		$self->{'on_choice'}->("[".$self->{SOCKET}->peerhost()."] $1");
+		print "[slackget10::Network DEBUG] Handling protocol : choice msg calling $self->{'on_choice'}\n";
+		$self->{'on_choice'}->("$1"); #il manque l'adresse
 		$_[0] =~ s/.*//g;
+		return 3;
 	}
-	elsif($_[0]=~ /^info:(\d+):\s*(.*)/)
+	elsif($_[0]=~ /^info:$self->{CONNID}:(\d+):\s*(.*)/)
 	{
-		print "Handling protocol : info msg calling $self->{'on_info'}\n";
-		$self->{'on_info'}->($1,"[".$self->{SOCKET}->peerhost()."] $1");
+		print "[slackget10::Network DEBUG] Handling protocol : info msg calling $self->{'on_info'}\n";
+		$self->{'on_info'}->($addr,$1,$2);
 		$_[0] =~ s/.*//g;
+		return 4;
 	}
-	
+# 	print "Canno't handle protocol for message \"$_[0]\"\n";
+	return 1;
+}
+
+sub _handle_responses
+{
+	my ($self,$message,$success_message) = @_;
+	my $socket = $self->{SOCKET} ;
+	my $str = '';
+	my $idx=8;
+	while(<$socket>)
+	{
+# 		next if($_ =~ /^\s*$/);
+# 		print "[slackget10::Network DEBUG] \"$_\"\n" if($idx<=10);
+		if($_=~ /^wait:$self->{CONNID}:/)
+		{
+			print "waiting for daemon\n";
+			sleep 2;
+			next ;
+		}
+		last if($_=~ /^end:$self->{CONNID}:\s*$message/);
+		if ($_=~ /auth_violation:$self->{CONNID}:\s*(.*)/)
+		{
+			return slackget10::Network::Response->new(
+				is_success => undef,
+				ERROR_MSG => $1,
+				DATA => $_
+			);
+			last ;
+		}
+		my $code = $self->_handle_protocol($_) ;
+		last if($code==2);
+		$str .= $_;
+	}
+# 	my @tt = split(/\n/,$str);
+# 	print "[DEBUG Network] ligne 0 \"",$tt[0],"\"\n";
+# 	print "[DEBUG Network] ligne 1 \"",$tt[1],"\"\n";
+	$str .= "$success_message" if(defined($success_message));
+	return slackget10::Network::Response->new(
+	is_success => 1,
+	DATA => $str
+	);
 }
 
 =head2 get_installed_list
@@ -161,32 +287,11 @@ In all case return a slackget10::Network::Response (L<slackget10::Network::Respo
 sub get_installed_list {
 	my $self = shift;
 	my $socket = $self->{SOCKET} ;
-	print $socket "get_installed_list\n";
-	my $str = '';
-	while(<$socket>)
+	$self->send_data("get_installed_list:$self->{CONNID}\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
-		{
-			sleep 1;
-			next ;
-		}
-		last if($_=~ /^end: get_installed_list/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		$str .= $_;
+		return $self->_handle_responses("get_installed_list") ;
 	}
-	return slackget10::Network::Response->new(
-	is_success => 1,
-	DATA => $str
-	);
 }
 
 =head2 get_packages_list
@@ -204,33 +309,11 @@ In all case return a slackget10::Network::Response (L<slackget10::Network::Respo
 sub get_packages_list {
 	my $self = shift;
 	my $socket = $self->{SOCKET} ;
-	print $socket "get_packages_list\n";
-	my $str = '';
-	while(<$socket>)
+	$self->send_data("get_packages_list:$self->{CONNID}\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
-		{
-			print "[DEBUG] daemon ask us to wait\n";
-			sleep 1;
-			next ;
-		}
-		last if($_=~ /^end: get_packages_list/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		$str .= $_ if($_);
+		return $self->_handle_responses("get_packages_list") ;
 	}
-	return slackget10::Network::Response->new(
-	is_success => 1,
-	DATA => $str
-	);
 }
 
 =head2 get_html_info
@@ -245,29 +328,11 @@ sub get_html_info
 {
 	my $self = shift;
 	my $socket = $self->{SOCKET} ;
-	print $socket "get_html_info\n";
-	my $str = '';
-	while(<$socket>)
+	$self->send_data("get_html_info:$self->{CONNID}\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
-		{
-			sleep 1;
-			next ;
-		}
-		last if($_=~ /^end: get_html_info/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		$str .= $_;
+		return $self->_handle_responses("get_html_info") ;
 	}
-	return $str;
 }
 
 =head2 build_packages_list
@@ -284,32 +349,11 @@ sub build_packages_list
 {
 	my ($self) = @_ ;
 	my $socket = $self->{SOCKET} ;
-	print $socket "build_packages_list\n";
-	my $str = '';
-	while(<$socket>)
+	$self->send_data("build_packages_list:$self->{CONNID}\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
-		{
-			sleep 1;
-			next ;
-		}
-		last if($_=~ /^end: build_packages_list/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		$str .= $_;
+		return $self->_handle_responses("build_packages_list") ;
 	}
-	return slackget10::Network::Response->new(
-	is_success => 1,
-	DATA => $str
-	);
 }
 
 =head2 build_installed_list
@@ -326,74 +370,108 @@ sub build_installed_list
 {
 	my ($self) = @_ ;
 	my $socket = $self->{SOCKET} ;
-	print $socket "build_installed_list\n";
-	my $str = '';
-	while(<$socket>)
+	$self->send_data("build_installed_list:$self->{CONNID}\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
-		{
-			sleep 1;
-			next ;
-		}
-		last if($_=~ /^end: build_installed_list/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		$str .= $_;
+		return $self->_handle_responses("build_installed_list") ;
 	}
-	return slackget10::Network::Response->new(
-	is_success => 1,
-	DATA => $str
-	);
 }
 
-=head2 build_server_list
+=head2 build_media_list
 
-Said to the remote slack-getd to build the server list (servers.xml file).
+Said to the remote slack-getd to build the media list (medias.xml file).
 
-	my $status = $net->build_server_list ;
+	my $status = $net->build_media_list ;
 
 The returned status contains no significant data in case of success.
 
 =cut
 
-sub build_server_list
+sub build_media_list
 {
 	my ($self) = @_ ;
 	my $socket = $self->{SOCKET} ;
-	print $socket "build_packages_list\n";
-	my $str = '';
-	while(<$socket>)
+	$self->send_data("build_media_list:$self->{CONNID}\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
-		{
-			sleep 1;
-			next ;
-		}
-		last if($_=~ /^end: build_server_list/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		$str .= $_;
+		return $self->_handle_responses("build_media_list") ;
 	}
-	return slackget10::Network::Response->new(
-	is_success => 1,
-	DATA => $str
-	);
+}
+
+=head2 diskspace
+
+Ask to the remote daemon for the state of the disk space on a specify partition.
+
+	$net->handle_responses(1); # We want slackget10::Network handle the response and return the hashref.
+	my $response = $net->diskspace( "/" ) ;
+	$net->handle_responses(0);
+	print "Free space on remote computer / directory is ",$response->data()->{avalaible_space}," KB\n";
+
+Return a slackget10::Network::Response object which contains (in case of success) a HASHREF build like that :
+
+	$space = {
+		device => <NUMBER>,
+		total_size => <NUMBER>,
+		used_space => <NUMBER>,
+		available_space => <NUMBER>,
+		use_percentage => <NUMBER>,
+		mount_point => <NUMBER>
+	};
+
+=cut
+
+sub diskspace
+{
+	my ($self,$dir) = @_ ;
+	my $socket = $self->{SOCKET} ;
+# 	print STDOUT "[DEBUG::Network.pm] sending command \"diskspace:$dir\" to remote daemon\n";
+	$self->send_data("diskspace:$self->{CONNID}:$dir\n") ;
+	if($self->{handle_responses})
+	{
+		my $str = '';
+		my $ds = {};
+		while(<$socket>)
+		{
+			chomp;
+			if($_=~ /^wait:$self->{CONNID}:/)
+			{
+				sleep 1;
+				next ;
+			}
+			if ($_=~ /auth_violation:$self->{CONNID}:\s*(.*)/)
+			{
+				return slackget10::Network::Response->new(
+					is_success => undef,
+					ERROR_MSG => $1,
+					DATA => $_
+				);
+				last ;
+			}
+			if($_=~ /^diskspace:$self->{CONNID}:(device=[^;]+;total_size=[^;]+;used_space=[^;]+;available_space=[^;]+;use_percentage=[^;]+;mount_point=[^;]+)/)
+			{
+				my $tmp = $1;
+				print STDOUT "[DEBUG::Network.pm] $tmp contient des info sur diskspace\n";
+				foreach my $pair (split(/;/,$tmp))
+				{
+					my ($key,$value) = split(/=/,$pair);
+					print STDOUT "[DEBUG::Network.pm] $key => $value\n";
+					$ds->{$key} = $value;
+				}
+			}
+			else
+			{
+				my $code = $self->_handle_protocol($_) ;
+				last if($code==2);
+				print STDOUT "[DEBUG::Network.pm] $_ ne contient pas d'info sur diskspace\n";
+			}
+			last if($_=~ /^end:$self->{CONNID}:\s*diskspace/);
+		}
+		return slackget10::Network::Response->new(
+		is_success => 1,
+		DATA => $ds
+		);
+	}
+	
 }
 
 =head2 search
@@ -412,32 +490,11 @@ sub search
 	my $socket = $self->{SOCKET} ;
 	my $fields = join(';',@args);
 # 	chop $fields ;
-	print $socket "search:$word:$fields\n";
-	my $str = '';
-	while(<$socket>)
+	$self->send_data("search:$self->{CONNID}:$word:$fields\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
-		{
-			sleep 1;
-			next ;
-		}
-		last if($_=~ /^end: search/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		$str .= $_;
+		return $self->_handle_responses("search") ;
 	}
-	return slackget10::Network::Response->new(
-	is_success => 1,
-	DATA => $str
-	);
 }
 
 =head2 websearch
@@ -459,41 +516,204 @@ sub websearch
 	my $fields = join(';',@{$args});
 	my $words = join(';',@{$requests}) ;
 # 	chop $fields ;
-	print $socket "websearch:$words:$fields\n";
-	my $str = [];
-	my $idx = 0;
-	while(<$socket>)
+	warn "[slackget10::Network] (debug::websearch) self=$self, words=$words, fields=$fields\n";
+	$self->send_data("websearch:$self->{CONNID}:$words:$fields\n") ;
+	if($self->{handle_responses})
 	{
-		if($_=~ /^wait:/)
+		my $str = [];
+		my $idx = 0;
+		while(<$socket>)
 		{
-			sleep 1;
-			next ;
+			if($_=~ /^wait:$self->{CONNID}:/)
+			{
+				sleep 1;
+				next ;
+			}
+			last if($_=~ /^end:$self->{CONNID}: websearch/);
+			if ($_=~ /auth_violation:$self->{CONNID}:\s*(.*)/)
+			{
+				return slackget10::Network::Response->new(
+					is_success => undef,
+					ERROR_MSG => $1,
+					DATA => $_
+				);
+				last ;
+			}
+			my $code = $self->_handle_protocol($_) ;
+			if($_=~/__MARK__/)
+			{
+				$idx++;
+			}
+			else
+			{
+				$str->[$idx] .= $_;
+			}
+			last if($code==2);
 		}
-		last if($_=~ /^end: websearch/);
-		if ($_=~ /auth_violation:\s*(.*)/)
-		{
-			return slackget10::Network::Response->new(
-				is_success => undef,
-				ERROR_MSG => $1,
-				DATA => $_
-			);
-			last ;
-		}
-		$self->_handle_protocol($_) ;
-		if($_=~/__MARK__/)
-		{
-			$idx++;
-		}
-		else
-		{
-			$str->[$idx] .= $_;
-		}
+		return slackget10::Network::Response->new(
+		is_success => 1,
+		DATA => $str
+		);
 	}
-	return slackget10::Network::Response->new(
-	is_success => 1,
-	DATA => $str
-	);
+	
 }
+
+=head2 multisearch
+
+Take 2 parameters : a reference on an array which contains the words to search for, and another array reference which contains a list of fields (valid fields are thoses describe in the packages.xml file).
+
+
+The DATA section of the response (L<slackget10::Network::Response>) will contain the XML encoded response.
+
+	my $response = $network->websearch([ 'burn', 'cd' ], [ 'name', 'description' ]) ;
+
+=cut
+
+sub multisearch
+{
+	my ($self,$requests,$args) = @_ ;
+	my $socket = $self->{SOCKET} ;
+	my $fields = join(';',@{$args});
+	my $words = join(';',@{$requests}) ;
+# 	chop $fields ;
+	$self->send_data("multisearch:$self->{CONNID}:$words:$fields\n") ;
+	if($self->{handle_responses})
+	{
+		return $self->_handle_responses("search") ;
+	}
+	
+}
+
+
+=head2 getfile
+
+This method allow you to download one or more files from a slack-get daemon. This method of download is specific to slack-get and is based on the EBCS protocol.
+
+Arguments are :
+
+	files : pass a slackget10::PackageList to this option.
+	
+	destdir : a string wich is the directory where will be stored the downloaded files.
+
+Here is a little code example :
+
+	# $pkgl is a slackget10::PackageList object.
+	$net->getfile(
+		file => $pkgl,
+		destdir => $sgo->config()->{common}->{'update-directory'}."/package-cache/"
+	);
+
+=cut
+
+sub getfile
+{
+	my $self = shift;
+	my %args = @_ ;
+# 	my $pkgl = $args{'file'};
+	return slackget10::Network::Response->new(
+				is_success => undef,
+				ERROR_MSG => "An object of slackget10::PackageList type was waited, but another type of object has come.",
+				DATA => undef
+			) if(ref($args{'file'}) ne 'slackget10::PackageList') ;
+# 	my $destdir = shift;
+	my $socket = $self->{SOCKET} ;
+	my $str = 'The following files have been successfully saved : ';
+	my $file;
+	my $write_in = 0;
+	# TODO: terminé ici : envoyé le message de requete de fichiers, et finir le code de récupération des fichiers (voir par ex si il n'y as pas d'erreur).
+	my $requested_pkgs = '';
+	$args{'file'}->index_list() ;
+	foreach (@{$args{'file'}->get_all})
+	{
+		$requested_pkgs .= $_->get_id().';'
+	}
+	chop $requested_pkgs;
+	$self->send_data("getfile:$self->{CONNID}:$requested_pkgs\n");
+	if($self->{handle_responses})
+	{
+		my $current_file;
+		while(<$socket>)
+		{
+			if($_=~ /^wait:$self->{CONNID}:/)
+			{
+				print "wait\n";
+				sleep 2;
+				next ;
+			}
+			last if($_=~ /^end:$self->{CONNID}:\s*getfile/);
+			if ($_=~ /auth_violation:$self->{CONNID}:\s*(.*)/)
+			{
+				return slackget10::Network::Response->new(
+					is_success => undef,
+					ERROR_MSG => $1,
+					DATA => $_
+				);
+				last ;
+			}
+			elsif($_ =~ /binaryfile:$self->{CONNID}:\s*(.+)/)
+			{
+				undef($file);
+				$file = slackget10::File->new("$args{'destdir'}/$1",'no-auto-load' => 1, 'mode' => 'write','binary' => 1);
+				$current_file=$1;
+				$current_file=~ s/\.tgz//;
+				$write_in = 1;
+			}
+			elsif($_ =~ /end:$self->{CONNID}:binaryfile/)
+			{
+				$file->Write_and_close ;
+				$args{'file'}->get_indexed($current_file)->setValue('is-installable',1) ;
+				$current_file = '';
+				$str .= $file->filename().' ';
+				$write_in = 0;
+			}
+			my $code = $self->_handle_protocol($_) ;
+			last if($code==2);
+			$file->Add($_) if($write_in && $code == 1);
+		}
+		return slackget10::Network::Response->new(
+		is_success => 1,
+		DATA => $str
+		);
+	}
+	
+}
+
+=head2 reboot
+
+	This method ask the remote daemon to reboot the remote computer.
+
+=cut
+
+sub reboot
+{
+	my $self = shift;
+	$self->send_data("reboot:$self->{CONNID}\n");
+}
+
+=head2 quit
+
+Close the current connection.
+
+	$net->quit ;
+
+=cut
+
+sub quit {
+	my ($self,$mess) = @_ ;
+	$mess = "end session" unless(defined($mess));
+	chomp $mess;
+# 	print "[debug slackget10::Network] sending \"quit:$self->{CONNID}:$mess\"\n";
+	$self->send_data("quit:$self->{CONNID}:$mess\n") ;
+# 	$self->{SOCKET}->close() ;
+}
+
+=head1 ACCESSORS
+
+=head2 Socket (read only)
+
+return the current socket (IO::Socket::INET) object.
+
+=cut
 
 =head2 Host
 
@@ -507,21 +727,13 @@ sub Host
 	return $self->{SOCKET}->peerhost() ;
 }
 
-=head1 ACCESSORS
-
-=head2 Socket
-
-return the current socket (IO::Socket::INET) object.
-
-=cut
-
 sub Socket
 {
 	my $self = shift;
 	return $self->{SOCKET} ;
 }
 
-=head2 slackget
+=head2 slackget (read only)
 
 return the current slackget10 object.
 
@@ -531,6 +743,30 @@ sub slackget
 {
 	my $self = shift ;
 	return $self->{SGO} ;
+}
+
+=head2 get_connectionid
+
+Return the (read-only) connection ID.
+
+	$net->get_connectionid
+
+=cut
+
+sub get_connectionid
+{
+	return $_[0]->{CONNID};
+}
+
+=head2 handle_responses (read/write)
+
+	Boolean accessor, get/set the value of the handle_responses option.
+
+=cut
+
+sub handle_responses
+{
+	return $_[1] ? $_[0]->{DATA}->{data}=$_[1] : $_[0]->{DATA}->{data};
 }
 
 =head1 PKGTOOLS BINDINGS
@@ -559,51 +795,75 @@ sub installpkg
 {
 	my ($self,$packagelist) = @_ ;
 	return undef if(ref($packagelist) ne 'slackget10::PackageList') ;
+	my $request;
 	foreach (@{$packagelist->get_all})
 	{
-		#TODO: finir d'écrire le traitement 
+		$request .= $_->get_id().';';
+	}
+	chop $request;
+	print "[DEBUG::Network::installpkg] request => $request\n";
+	my $socket = $self->{SOCKET} ;
+	$self->send_data("installpkg:$self->{CONNID}:$request\n") ;
+	if($self->{handle_responses})
+	{
+		return $self->_handle_responses("installpkg","All packages marked for installation have been treated.") ;
 	}
 	return 1;
 }
 
 =head2 upgradepkg
 
+	$net->upgradepkg($packagelist) ;
+
 =cut
 
 sub upgradepkg
 {
-	my ($self) = @_ ;
+	my ($self,$packagelist) = @_ ;
+	return undef if(ref($packagelist) ne 'slackget10::PackageList') ;
+	my $request;
+	foreach (@{$packagelist->get_all})
+	{
+		$request .= $_->get_id().';';
+	}
+	chop $request;
+	print "[DEBUG::Network::installpkg] request => $request\n";
+	my $socket = $self->{SOCKET} ;
+	$self->send_data("upgradepkg:$self->{CONNID}:$request\n") ;
+	if($self->{handle_responses})
+	{
+		return $self->_handle_responses("upgradepkg","All packages marked for upgrade have been treated.") ;
+	}
+	return 1;
 }
 
 =head2 removepkg
+
+Send network commands to a slack-get daemon. This method (like other pkgtools network call), do nothing by herself, but sending a "removepkg:pkg1;pkg2;..;pkgN" to the slack-getd.
+
+	$net->removepkg($packagelist) ;
 
 =cut
 
 sub removepkg
 {
-	my ($self) = @_ ;
-}
-
-=head2 quit
-
-Close the current connection.
-
-	$net->quit ;
-
-=cut
-
-sub quit {
-	my ($self,$mess) = @_ ;
+	my ($self,$packagelist) = @_ ;
+	print "[DEBUG::Network::removepkg] packagelist => $packagelist\n";
+	return undef if(ref($packagelist) ne 'slackget10::PackageList') ;
+	my $request;
+	foreach (@{$packagelist->get_all})
+	{
+		$request .= $_->get_id().';';
+	}
+	chop $request;
+	print "[DEBUG::Network::removepkg] request => $request\n";
 	my $socket = $self->{SOCKET} ;
-	if(defined($mess))
+	$self->send_data("removepkg:$self->{CONNID}:$request\n") ;
+	if($self->{handle_responses})
 	{
-		print $socket "quit: $mess\n";
+		return $self->_handle_responses("removepkg","All packages marked for remove have been treated.") ;
 	}
-	else
-	{
-		print $socket "quit: end session\n";
-	}
-	$self->{SOCKET}->close() ;
+	return 1;
 }
 
 =head1 DEFAULT HANDLERS
@@ -664,9 +924,8 @@ THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD
 
 sub on_choice
 {
-	my $arrayref = shift;
 	my $xml = shift;
-	die "[event::choice] the slackget10::Network::on_choice default handler cannot be called as an instance method.\n" if(ref($arrayref) eq 'slackget10::Network');
+	die "[event::choice] the slackget10::Network::on_choice default handler cannot be called as an instance method.\n" if(ref($xml) eq 'slackget10::Network');
 	# TODO: finir cette méthode (implémenter le choix).
 }
 
@@ -680,10 +939,10 @@ THIS FUNCTION CANNOT BE CALL AS AN INSTANCE METHOD
 
 sub on_info
 {
-	my $mess = shift;
+	my ($ip,$level,$mess)=@_;
 	chomp $mess;
-	die "[event::info] the slackget10::Network::on_unknow default handler cannot be called as an instance method.\n" if(ref($mess) eq 'slackget10::Network');
-	print "[event::info] remote slack-getd send an information message \"$mess\"\n";
+	die "[event::info] the slackget10::Network::on_unknow default handler cannot be called as an instance method.\n" if(ref($ip) eq 'slackget10::Network');
+	print "[event::info] remote slack-getd ($ip) send an information message \"$mess\" at the importance level $level/3\n";
 }
 
 =head1 AUTHOR

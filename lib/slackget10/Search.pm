@@ -9,11 +9,11 @@ slackget10::Search - The slack-get search class
 
 =head1 VERSION
 
-Version 1.0.0
+Version 0.8.2
 
 =cut
 
-our $VERSION = '0.8.2';
+our $VERSION = '0.8.5';
 
 =head1 SYNOPSIS
 
@@ -138,7 +138,7 @@ sub search_package_in_description {
 
 =head2 search_package_multi_fields
 
-Take a string and a fiels list as parameter, and search for this string in the package required fields
+Take a string and a fields list as parameter, and search for this string in the package required fields
 
 	my @array = $search->search_package_multi_fields($string,@fields);
 
@@ -162,11 +162,11 @@ sub search_package_multi_fields {
 			{
 				if(defined($_->getValue($1)) && $_->getValue($1) ne $2)
 				{
-					print "[search] '$1' => '",$_->getValue($1),"' ne '$2'\n";
+# 					print "[search] '$1' => '",$_->getValue($1),"' ne '$2'\n";
 					last ;
 				}
 			}
-			if($_->get_id() =~ /\Q$string\E/i or (defined($_->getValue($field)) && $_->getValue($field)=~ /\Q$string\E/i)){
+			elsif($_->get_id() =~ /\Q$string\E/i or (defined($_->getValue($field)) && $_->getValue($field)=~ /\Q$string\E/i)){
 				push @result, $_;
 				last;
 			}
@@ -191,30 +191,56 @@ sub multi_search
 {
 	my ($self,$requests,$fields,$opts) = @_ ;
 	my @result;
-	foreach (@{$self->{PKGLIST}->get_all()}){
-		my $is_result = undef;
+	my $complete_request = join ' ', @{$requests};
+	$complete_request=~ s/^(.+)\s+$/$1/;
+	print STDERR "[slackget10::Search->multi_search()] (debug) the complete request is \"$complete_request\"\n";
+	foreach (@{$self->{PKGLIST}->get_all()})
+	{
+		my $is_result = 0;
 		my $cpt = 0 ;
 		foreach my $field (@{$fields})
 		{
+			my $field_value;
+			if($field=~ /^([^=]+)=(.+)/)
+			{
+				if(defined($_->getValue($1)) && $_->getValue($1) ne $2)
+				{
+					$is_result = undef;
+					last ;
+				}
+				elsif(defined($_->getValue($1)) && $_->getValue($1) eq $2)
+				{
+					$cpt+= 5 ;
+				}
+			}
+			else
+			{
+				next if(!defined($field_value = $_->getValue($field)));
+			}
 			foreach my $string (@{$requests})
 			{
-				if($field=~ /^([^=]+)=(.+)/)
-				{
-					if(defined($_->getValue($1)) && $_->getValue($1) ne $2)
-					{
-						print "[search] '$1' => '",$_->getValue($1),"' ne '$2'\n";
-						last ;
-					}
+				next unless(defined($field_value) && defined($complete_request));
+				my @tmp;
+				if(@tmp = $field_value=~ /\Q$complete_request\E/gi){
+					$cpt+= scalar(@tmp)*5 ;
+					$is_result += 1;
 				}
-				if($_->get_id() =~ /\Q$string\E/i or (defined($_->getValue($field)) && (my @tmp = $_->getValue($field)=~ /\Q$string\E/gi))){
-					$cpt+= scalar(@tmp) ;
-					$is_result = 1;
+				elsif(@tmp = $field_value=~ /\Q$string\E/gi){ #@tmp = $_->get_id() =~ /\Q$string\E/gi or 
+					$cpt+= scalar(@tmp)*1.5 ;
+					$is_result += 1;
 				}
+				
 			}
 			
 		}
-		$_->setValue('score',$cpt);
-		push @result, $_ if($is_result);
+		$is_result = 0 if($is_result < (scalar(@{$requests})/2) );
+		if($is_result)
+		{
+			print STDERR "[slack-get] (search engine debug) package ",$_->get_id," got a score of $cpt and a 'is_result' of $is_result\n" if($is_result && $cpt);
+			$_->setValue('score',$cpt);
+			$_->setValue('slackget10-search-version',$VERSION);
+			push @result, $_ ;
+		}
 	}
 	return @result;
 }
