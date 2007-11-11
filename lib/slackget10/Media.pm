@@ -142,8 +142,9 @@ sub fill_object_from_xml {
 		if(defined($xml->{'update-repository'}->{faster})){
 			require slackget10::Network::Connection;
 			unless(slackget10::Network::Connection::is_url(undef,$xml->{'update-repository'}->{faster})){
-				warn "[slackget10::Media] the faster host of the update-repository section will not be accept as a valid URL by slackget10::Connection class !\n";
+				warn "[slackget10::Media] the faster host of the update-repository section will not be accepted as a valid URL by slackget10::Connection class !\n";
 			}
+			return undef unless(defined($xml->{'update-repository'}->{faster}));
 			$self->setValue('host',$xml->{'update-repository'}->{faster});
 		}
 		if(defined($xml->{'update-repository'}->{fast}) && defined($xml->{'update-repository'}->{fast}->{li}) && ref($xml->{'update-repository'}->{fast}->{li}) eq 'ARRAY')
@@ -484,10 +485,47 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-networking@rt.cpan.org>, or through the web interface at
+C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
 
 =head1 ACKNOWLEDGEMENTS
 

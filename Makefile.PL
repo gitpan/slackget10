@@ -16,8 +16,10 @@ WriteMakefile
                            'Time::HiRes' => '>= 1.66',
                            'HTTP::Status' => '>= 1.28',
                            'Test::More' => 0,
+                           'XML::Parser' => 0,
                            'Proc::Daemon' => 0,
-                           'LWP::Simple' => '>= 1.41'
+                           'LWP::Simple' => '>= 1.41',
+                           'HTTP::Request' => '>= 1.40'
                          }
         )
 ;

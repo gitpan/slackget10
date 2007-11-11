@@ -4,7 +4,6 @@ use warnings;
 use strict;
 
 require slackget10::Base ;
-require slackget10::Log ;
 require slackget10::Network::Auth ;
 require slackget10::Config ;
 require slackget10::PkgTools ;
@@ -15,11 +14,11 @@ slackget10 - The main slack-get 1.0 library
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 SYNOPSIS
 
@@ -70,22 +69,6 @@ sub new {
 	die "FATAL: You must pass a name for this instance of slackget10 via the -name parameter.\n" if(!defined($args{'-name'})) ;
 	die "FATAL: You must pass a version to this constructor via the -version parameter.\n" if(!defined($args{'-version'})) ;
 	$self->{'config'} = new slackget10::Config ( $args{'-config'} )  or die "FATAL: error during configuration file parsing\n$!\n" ;
-# 	printf("create log...
-# 		LOG_FORMAT => $self->{'config'}->{common}->{'log'}->{'log-format'},
-# 		NAME => $args{'-name'},
-# 		VERSION => $args{'-version'},
-# 		LOG_FILE => $self->{'config'}->{common}->{'log'}->{'log-file'},
-# 		LOG_LEVEL => $self->{'config'}->{common}->{'log'}->{'log-level'},
-# 		FILE_ENCODING => $self->{'config'}->{common}->{'file-encoding'}
-# 	\n");
-	$self->{'log'} = slackget10::Log->new(
-		LOG_FORMAT => $self->{'config'}->{common}->{'log'}->{'log-format'},
-		NAME => $args{'-name'},
-		VERSION => $args{'-version'},
-		LOG_FILE => $self->{'config'}->{common}->{'log'}->{'log-file'},
-		LOG_LEVEL => $self->{'config'}->{common}->{'log'}->{'log-level'},
-		FILE_ENCODING => $self->{'config'}->{common}->{'file-encoding'}
-	);
 	$self->{'base'} = new slackget10::Base ( $self->{'config'} );
 	$self->{'pkgtools'} = new slackget10::PkgTools ( $self->{'config'} );
 	$self->{'auth'} = slackget10::Network::Auth->new( $self->{'config'} );
@@ -135,7 +118,7 @@ Ex:
 sub load_plugins {
 	my $self = shift;
 	my $HOOKS = shift;
-	my $plugin_type = shift; # TODO: implémenter la séléction des types de plug-in
+	my $plugin_type = shift; # TODO: implï¿½enter la sï¿½ï¿½tion des types de plug-in
 	my $extra_ref = shift;
 # 	print "[SG10] needed type : $plugin_type\n";
 	#NOTE : searching for install plug-in
@@ -201,7 +184,7 @@ sub load_plugins {
 		my $ret;
 		if($plugin_type=~ /gui/i)
 		{
-			# TODO: tester le code de chargement d'un plug-in graphique, la ligne suivante n'a pas encore été testée
+			# TODO: tester le code de chargement d'un plug-in graphique, la ligne suivante n'a pas encore ï¿½ï¿½testï¿½
 			print "[DEBUG slackget10.pm::load_plugins()] loading package \"$package\" call is \"use $package; $package( $extra_ref ) ;\" }\"\n";
 			$ret = eval "use $package; $package( $extra_ref ) ;" ;
 		}
@@ -324,20 +307,6 @@ sub call_plugins
 }
 
 =head1 ACCESSORS
-
-=head2 log
-
-Return the log object of the current instance of the slackget10 object.
-
-	$sgo->log()->Log(1,"This is a log message\n") ;
-
-=cut
-
-sub log
-{
-	my $self = shift;
-	return $self->{'log'} ;
-}
 
 =head2 base
 

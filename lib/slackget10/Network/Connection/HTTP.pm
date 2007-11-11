@@ -4,10 +4,12 @@ use warnings;
 use strict;
 
 use LWP::Simple ;
+use File::Basename ;
 require HTTP::Status ;
 require slackget10::Network::Connection ;
 require Time::HiRes ;
 require slackget10::Status ;
+# use POE::Component::Client::HTTP;
 
 =head1 NAME
 
@@ -15,11 +17,11 @@ slackget10::Network::Connection::HTTP - This class encapsulate LWP::Simple
 
 =head1 VERSION
 
-Version 0.9.3
+Version 1.0.0
 
 =cut
 
-our $VERSION = '0.9.3';
+our $VERSION = '1.0.0';
 # our @ISA = qw( slackget10::Network::Connection ) ;
 
 =head1 SYNOPSIS
@@ -69,7 +71,7 @@ This method test the rapidity of the mirror, by timing a head request on the FIL
 
 =cut
 
-sub test_server {
+sub __test_server {
 	my $self = shift ;
 # 	print "[debug http] protocol : $self->{DATA}->{protocol}\n";
 # 	print "[debug http] host : $self->{DATA}->{host}\n";
@@ -86,7 +88,7 @@ sub test_server {
 	return ($stop_time - $start_time);
 }
 
-=head2 get_file
+=head2 __get_file
 
 Download and return a given file.
 
@@ -94,13 +96,13 @@ Download and return a given file.
 
 =cut
 
-sub get_file {
+sub __get_file {
 	my ($self,$remote_file) = @_ ;
 	$remote_file = $self->file unless(defined($remote_file)) ;
 	return get($self->strip_slash($self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file));
 }
 
-=head2 fetch_file
+=head2 __fetch_file
 
 Download and store a given file.
 
@@ -114,27 +116,31 @@ Download and store a given file.
 This method return a slackget10::Status object with the following object declaration :
 
 	my $state =  slackget10::Status->new(codes => {
-		0 => "All goes well.<br> Server said: <br>$ret_code - ".status_message( $ret_code ),
-		1 => "Server error, you must choose the next host for this server.<br> Server said: $ret_code - $tmp_status_message",
-		2 => "Client error, it seems that you have a problem with you connection or with the slackget10 library <br>(or with a library which we depended on). It is also possible that the file we try to download was not on the remote server.<br> Server said: <br>$ret_code - $tmp_status_message",
-		3 => "Server has redirected us, we prefer direct connection, change host for this server.<br> Server said: <br>$ret_code - $tmp_status_message",
-		4 => "The HTTP connection is not a success and we are not able to know what, we recommend to change the current host of this server.<br> Server said: <br>$ret_code - $tmp_status_message"
+		0 => "All goes well.<br/> Server said: <br/>$ret_code - ".status_message( $ret_code ),
+		1 => "Server error, you must choose the next host for this server.<br/> Server said: $ret_code - $tmp_status_message",
+		2 => "Client error, it seems that you have a problem with you connection or with the slackget10 library <br/>(or with a library which we depended on). It is also possible that the file we try to download was not on the remote server.<br/> Server said: <br/>$ret_code - $tmp_status_message",
+		3 => "Server has redirected us, we prefer direct connection, change host for this server.<br/> Server said: <br/>$ret_code - $tmp_status_message",
+		4 => "The HTTP connection is not a success and we are not able to know what, we recommend to change the current host of this server.<br/> Server said: <br/>$ret_code - $tmp_status_message"
 	});
 
 This is the direct code of this method :)
 
 =cut
 
-sub fetch_file {
+sub __fetch_file {
 	my ($self,$remote_file,$local_file) = @_ ;
 	$remote_file = $self->file unless(defined($remote_file));
 	unless(defined($local_file)){
-		if(defined($self->{DATA}->{config})){
+		if(defined($self->{DATA}->{download_directory}) && -e $self->{DATA}->{download_directory}){
+			$remote_file=~ /([^\/]*)$/;
+			$local_file = $self->{DATA}->{download_directory}.'/'.$1 ;
+		}
+		elsif(defined($self->{DATA}->{config})){
 			$remote_file=~ /([^\/]*)$/;
 			$local_file = $self->{DATA}->{config}->{common}->{'update-directory'}.'/'.$1 ;
 		}
 		else{
-			warn "[slackget10::Network::Connection::HTTP] No \"config\" parameter detected, I can't determine a path to save $remote_file.\n";
+			warn "[slackget10::Network::Connection::HTTP] unable to determine the path to save $remote_file.\n";
 			return undef;
 		}
 	}
@@ -143,13 +149,13 @@ sub fetch_file {
 #  	print "\n[debug http] save the fetched file ($url) to $local_file\n";
 	my $ret_code = getstore($url,$local_file) ;
 	my $tmp_status_message = status_message( $ret_code );
-	$tmp_status_message=~ s/\n/<br>/g;
+	$tmp_status_message=~ s/\n/<br\/>/g;
 	my $state =  slackget10::Status->new(codes => {
-		0 => "All goes well.<br> Server said: <br>$ret_code - $tmp_status_message",
-		1 => "Server error, you must choose the next host for this server.<br> Server said: <br>$ret_code - $tmp_status_message",
-		2 => "Client error, it seems that you have a problem with you connection or with the slackget10 library <br>(or with a library which we depended on). It is also possible that the file we try to download was not on the remote server.<br> Server said: <br>$ret_code - $tmp_status_message",
-		3 => "Server has redirected us, we prefer direct connection, change host for this server.<br> Server said: <br>$ret_code - $tmp_status_message",
-		4 => "The HTTP connection is not a success and we are not able to know what, we recommend to change the current host of this server.<br> Server said: <br>$ret_code - $tmp_status_message"
+		0 => "All goes well.<br/> Server said: <br/>$ret_code - $tmp_status_message",
+		1 => "Server error, you must choose the next host for this server.<br/> Server said: <br/>$ret_code - $tmp_status_message",
+		2 => "Client error, it seems that you have a problem with you connection or with the slackget10 library <br/>(or with a library which we depended on). It is also possible that the file we try to download was not on the remote server.<br/> Server said: <br/>$ret_code - $tmp_status_message",
+		3 => "Server has redirected us, we prefer direct connection, change host for this server.<br/> Server said: <br/>$ret_code - $tmp_status_message",
+		4 => "The HTTP connection is not a success and we are not able to know what, we recommend to change the current host of this server.<br/> Server said: <br/>$ret_code - $tmp_status_message"
 	});
 	if(is_success($ret_code)){
 		$state->current(0);
@@ -178,22 +184,39 @@ sub fetch_file {
 	return $state;
 }
 
-=head2 fetch_all
+=head2 __fetch_all
 
 This method fetch all files declare in the "files" parameter of the constructor.
 
 	$connection->fetch_all or die "Unable to fetch all files\n";
 
 This method save all files in the $config->{common}->{'update-directory'} directory (so you have to manage yourself the files deletion/replacement problems)
+
 =cut
 
-sub fetch_all {
+sub __fetch_all {
 	my $self = shift ;
 	foreach (@{$self->files}){
-		$self->fetch($_) or return undef;
+		$self->fetch_file($_) or return undef;
 	}
 	return 1 ;
 }
+
+
+=head2 __download
+
+This method is introduced with the 0.11 release of slackget10 and is the one used to emulate POE behaviour.
+
+This method is here in order to simplify the migration to the new POE based architecture.
+
+download() take only one argument : a file to download and it will call all needed InlineStates when it's possible.
+
+=cut
+
+sub __download {
+	my ($self,$file) = @_ ;
+}
+
 
 =head1 AUTHOR
 
@@ -202,10 +225,47 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-networking@rt.cpan.org>, or through the web interface at
+C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
 
 =head1 ACKNOWLEDGEMENTS
 

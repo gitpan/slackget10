@@ -9,8 +9,6 @@ lib/slackget10/GPG.pm
 lib/slackget10/GPG/Signature.pm
 lib/slackget10/List.pm
 lib/slackget10/Local.pm
-lib/slackget10/Log.pm
-lib/slackget10/Log/logRotate.pm
 lib/slackget10/MD5.pm
 lib/slackget10/Media.pm
 lib/slackget10/MediaList.pm
@@ -32,7 +30,9 @@ lib/slackget10/SpecialFiles/CHECKSUMS.pm
 lib/slackget10/SpecialFiles/FILELIST.pm
 lib/slackget10/SpecialFiles/PACKAGES.pm
 lib/slackget10/Status.pm
+Makefile.PL
 MANIFEST			This list of files
+META.yml
 README
 t/00-load.t
 t/01-Config.t
@@ -41,5 +41,3 @@ t/config.xml
 t/medias.xml
 t/pod-coverage.t
 t/pod.t
-Makefile.PL
-META.yml

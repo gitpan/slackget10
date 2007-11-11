@@ -1,6 +1,6 @@
 ---
 name: slackget10
-version: 0.10
+version: 0.11
 author:
   - 'Arnaud Dupuis <dupuisarn@cpan.org>'
 abstract: The main slack-get 1.0 library
@@ -11,21 +11,23 @@ build_requires:
   Data::Dumper: '>= 2.121_02'
   File::Copy: '>= 2.08'
   Getopt::Long: 0
+  HTTP::Request: '>= 1.40'
   HTTP::Status: '>= 1.28'
   LWP::Simple: '>= 1.41'
   Net::FTP: '>= 2.75'
   Proc::Daemon: 0
   Test::More: 0
   Time::HiRes: '>= 1.66'
+  XML::Parser: 0
   XML::Simple: 0
   perl: '>= 5.8.5'
 provides:
   slackget10:
     file: lib/slackget10.pm
-    version: 0.10
+    version: 0.11
   slackget10::Base:
     file: lib/slackget10/Base.pm
-    version: 1.0.2
+    version: 1.0.3
   slackget10::Config:
     file: lib/slackget10/Config.pm
     version: 1.0.0
@@ -47,9 +49,6 @@ provides:
   slackget10::Local:
     file: lib/slackget10/Local.pm
     version: 0.7.1
-  slackget10::Log:
-    file: lib/slackget10/Log.pm
-    version: 0.3.8
   slackget10::MD5:
     file: lib/slackget10/MD5.pm
     version: 0.1
@@ -67,7 +66,7 @@ provides:
     version: 0.8.7
   slackget10::Network::Connection:
     file: lib/slackget10/Network/Connection.pm
-    version: 0.9.7
+    version: 1.0.0
   slackget10::Network::Connection::FILE:
     file: lib/slackget10/Network/Connection/FILE.pm
     version: 0.6.0
@@ -76,7 +75,7 @@ provides:
     version: 0.9.3
   slackget10::Network::Connection::HTTP:
     file: lib/slackget10/Network/Connection/HTTP.pm
-    version: 0.9.3
+    version: 1.0.0
   slackget10::Network::Response:
     file: lib/slackget10/Network/Response.pm
     version: 0.9.2
@@ -113,9 +112,6 @@ provides:
   slackget10::Status:
     file: lib/slackget10/Status.pm
     version: 0.9.9
-  slackget::Log::logRotate:
-    file: lib/slackget10/Log/logRotate.pm
-    version: 0.12
 generated_by: Module::Build version 0.2806
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

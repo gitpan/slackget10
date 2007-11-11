@@ -58,7 +58,7 @@ This class is not designed to be instanciate alone or used alone. You have to us
 
 =head1 FUNCTIONS
 
-=head2 test_server
+=head2 __test_server
 
 This method test the rapidity of the mirror, by making a new connection to the server and logging in. Be aware of the fact that after testing the connection you will have a new connection (if you were previously connected the previous connection is closed).
 
@@ -66,7 +66,7 @@ This method test the rapidity of the mirror, by making a new connection to the s
 
 =cut
 
-sub test_server {
+sub __test_server {
 	my $self = shift ;
 # 	print "[debug http] protocol : $self->{DATA}->{protocol}\n";
 # 	print "[debug http] host : $self->{DATA}->{host}\n";
@@ -95,7 +95,7 @@ sub _connect
 # 	print "[_connect] test de l'existence d'une connexion\n";
 	unless($self->{DATA}->{conn})
 	{
-# 		print "[_connect] pas de connexion : création\n";
+# 		print "[_connect] pas de connexion : crï¿½tion\n";
 		$self->{DATA}->{conn} = Net::FTP->new($self->{DATA}->{host}) or return undef;
 # 		print "[_connect] login\n";
 		$self->{DATA}->{conn}->login($self->{DATA}->{config}->{'network-parameters'}->{ftp}->{login},$self->{DATA}->{config}->{'network-parameters'}->{ftp}->{password}) or return undef;
@@ -120,7 +120,7 @@ sub _test_current_directory {
 	my $self = shift ;
 # 	print "test de connexion\n";
 	$self->_connect or return undef;
-# 	print "répertoire courant : ",$self->conn->pwd,"\n";
+# 	print "rï¿½ertoire courant : ",$self->conn->pwd,"\n";
 # 	print "path : $self->{DATA}->{path}\n";
 	my $tmp_path = $self->conn->pwd ;
 	if( $self->{DATA}->{path}=~/^$tmp_path\/*$/)
@@ -135,7 +135,7 @@ sub _test_current_directory {
 	}
 }
 
-=head2 get_file
+=head2 __get_file
 
 Download and return a given file.
 
@@ -147,7 +147,7 @@ So you'd better to use fetch_file().
 
 =cut
 
-sub get_file {
+sub __get_file {
 	my ($self,$remote_file) = @_ ;
 	$remote_file = $self->file unless(defined($remote_file)) ;
 	srand (time ^ $$ ^ unpack "%L*", `ps axww | gzip`);
@@ -163,7 +163,7 @@ sub get_file {
 # 	return get($self->protocol().'://'.$self->host().'/'.$self->path().'/'.$remote_file);
 }
 
-=head2 fetch_file
+=head2 __fetch_file
 
 Download and store a given file.
 
@@ -184,16 +184,20 @@ This method return a slackget10::Status object with the following object declara
 
 =cut
 
-sub fetch_file {
+sub __fetch_file {
 	my ($self,$remote_file,$local_file) = @_ ;
 	$remote_file = $self->file unless(defined($remote_file));
 	unless(defined($local_file)){
-		if(defined($self->{DATA}->{config})){
+		if(defined($self->{DATA}->{download_directory}) && -e $self->{DATA}->{download_directory}){
+			$remote_file=~ /([^\/]*)$/;
+			$local_file = $self->{DATA}->{download_directory}.'/'.$1 ;
+		}
+		elsif(defined($self->{DATA}->{config})){
 			$remote_file=~ /([^\/]*)$/;
 			$local_file = $self->{DATA}->{config}->{common}->{'update-directory'}.'/'.$1 ;
 		}
 		else{
-			warn "[slackget10::Network::Connection::FTP] No \"config\" parameter detected, I can't determine a path to save $remote_file.\n";
+			warn "[slackget10::Network::Connection::FTP] unable to determine the path to save $remote_file.\n";
 			return undef;
 		}
 	}
@@ -214,19 +218,20 @@ sub fetch_file {
 	return $state;
 }
 
-=head2 fetch_all
+=head2 __fetch_all
 
 This method fetch all files declare in the "files" parameter of the constructor.
 
 	$connection->fetch_all or die "Unable to fetch all files\n";
 
 This method save all files in the $config->{common}->{'update-directory'} directory (so you have to manage yourself the files deletion/replacement problems)
+
 =cut
 
-sub fetch_all {
+sub __fetch_all {
 	my $self = shift ;
 	foreach (@{$self->files}){
-		$self->fetch($_) or return undef;
+		$self->fetch_file($_) or return undef;
 	}
 	return 1 ;
 }

@@ -11,7 +11,7 @@ use slackget10::File;
 
 =head1 NAME
 
-slackget10::Network::Connection::FILE - This class encapsulate LWP::Simple
+slackget10::Network::Connection::FILE - This class is the file:// protocol driver for slackget10::Network::Connection
 
 =head1 VERSION
 
@@ -24,13 +24,13 @@ our $VERSION = '0.6.0';
 
 =head1 SYNOPSIS
 
-This class encapsulate LWP::Simple, and provide some methods for the treatment of FILE requests.
+This class is the file:// protocol driver for slackget10::Network::Connection.
 
 You can't use this class without the slackget10::Network::Connection one.
 
 This class need the following extra CPAN modules :
 
-	- LWP::Simple
+	- File::Copy
 	- Time::HiRes
 
 
@@ -63,7 +63,7 @@ This method test the rapidity of the repository, by timing a copy of the FILELIS
 
 =cut
 
-sub test_server {
+sub __test_server {
 	my $self = shift ;
 # 	print "[debug file] protocol : $self->{DATA}->{protocol}\n";
 # 	print "[debug file] host : $self->{DATA}->{host}\n";
@@ -77,7 +77,7 @@ sub test_server {
 	return ($stop_time - $start_time);
 }
 
-=head2 get_file
+=head2 __get_file
 
 Return the given file.
 
@@ -87,7 +87,7 @@ You can pass an extra argument (boolean) to mark the file as a binary one.
 
 =cut
 
-sub get_file {
+sub __get_file {
 	my ($self,$remote_file,$binary) = @_ ;
 	$remote_file = $self->file unless(defined($remote_file)) ;
 	my $file;
@@ -102,7 +102,7 @@ sub get_file {
 	return $file->Get_file ;
 }
 
-=head2 fetch_file
+=head2 __fetch_file
 
 Copy a given file to a given location.
 
@@ -125,16 +125,20 @@ This is the direct code of this method :)
 
 =cut
 
-sub fetch_file {
+sub __fetch_file {
 	my ($self,$remote_file,$local_file) = @_ ;
 	$remote_file = $self->file unless(defined($remote_file));
 	unless(defined($local_file)){
-		if(defined($self->{DATA}->{config})){
+		if(defined($self->{DATA}->{download_directory}) && -e $self->{DATA}->{download_directory}){
+			$remote_file=~ /([^\/]*)$/;
+			$local_file = $self->{DATA}->{download_directory}.'/'.$1 ;
+		}
+		elsif(defined($self->{DATA}->{config})){
 			$remote_file=~ /([^\/]*)$/;
 			$local_file = $self->{DATA}->{config}->{common}->{'update-directory'}.'/'.$1 ;
 		}
 		else{
-			warn "[slackget10::Network::Connection::FILE] No \"config\" parameter detected, I can't determine a path to save $remote_file.\n";
+			warn "[slackget10::Network::Connection::FILE] unable to determine the path to save $remote_file.\n";
 			return undef;
 		}
 	}
@@ -165,19 +169,20 @@ sub fetch_file {
 	return $state;
 }
 
-=head2 fetch_all
+=head2 __fetch_all
 
 This method fetch all files declare in the "files" parameter of the constructor.
 
 	$connection->fetch_all or die "Unable to fetch all files\n";
 
 This method save all files in the $config->{common}->{'update-directory'} directory (so you have to manage yourself the files deletion/replacement problems)
+
 =cut
 
-sub fetch_all {
+sub __fetch_all {
 	my $self = shift ;
 	foreach (@{$self->files}){
-		$self->fetch($_) or return undef;
+		$self->fetch_file($_) or return undef;
 	}
 	return 1 ;
 }
@@ -189,10 +194,47 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-networking@rt.cpan.org>, or through the web interface at
+C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
 
 =head1 ACKNOWLEDGEMENTS
 

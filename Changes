@@ -54,3 +54,10 @@ Revision history for slackget10
 		* slackget10::Networking
 		* slackget10::Network::Daemon
 	- fixes the test suite
+
+0.11 Sun Nov 11 20:30:12 CEST 2007
+	- Made the slackget10::Network::Connection::* drivers loading completly dynamic.
+	- Removed the followings class from the module :
+		* slackget10::Log
+		* slackget10::Log::LogRotate
+	- Change loads of things in slackget10::Network::Connection (please look at the documentation)

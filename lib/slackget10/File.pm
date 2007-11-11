@@ -17,9 +17,9 @@ our $VERSION = '1.0.3';
 
 =head1 SYNOPSIS
 
-slackget10::File is the class which represent a file for slack-get. You can perform 0all operation on file with this module. 
+slackget10::File is the class which represent a file for slack-get. 
 
-Access to hard disk are economized by taking a copy of the file in memory, so if you work on big file it may be a bad idea to use this module. Or maybe you have some interest to close the file while you don't work on it.
+Access to hard disk are saved by taking a copy of the file in memory, so if you work on big file it may be a bad idea to use this module. Or maybe you have some interest to close the file while you don't work on it.
 
 	use slackget10::File;
 
@@ -51,7 +51,8 @@ sub new
 	}
 # 	print "using $self->{'file-encoding'} as file-encoding for file $file\n";
 	$self->{FILENAME} = $file;
-	$self->{MODE} = $args{'mode'} if($args{'mode'} && ($args{'mode'} eq 'write' or $args{'mode'} eq 'rewrite'));
+	$self->{MODE} = $args{'mode'} if($args{'mode'} && ($args{'mode'} eq 'write' or $args{'mode'} eq 'append' or $args{'mode'} eq 'rewrite'));
+	$self->{MODE} = 'append' if(defined($self->{MODE}) && $self->{MODE} eq 'rewrite');
 	$self->{BINARY} = 0;
 	$self->{BINARY} = $args{'binary'} if($args{'binary'});
 	$self->{SKIP_WL} = $args{'skip-white-line'} if($args{'skip-white-line'});
@@ -89,11 +90,13 @@ You can also disabling the auto load of the file by passing a parameter 'no-auto
 
 	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1', 'no-auto-load' => 1);
 
-You can also pass an argument "mode" which take 'rewrite' or 'write' as value :
+You can also pass an argument "mode" which take 'append or 'write' as value :
 
 	my $file = slackget10::File->new('foo.txt','file-encoding' => 'iso-8859-1', 'mode' => 'rewrite');
 
-This will decide how to open the file (> or >>)
+This will decide how to open the file (> or >>). Default is 'write' ('>').
+
+Note: for backward compatibility mode => "rewrite" is still accepted as a valid mode. It is an alias for "append"
 
 You can also specify if the file must be open as binary or normal text with the "binary" argument. This one is boolean (0 or 1). The default value is 0 :
 
@@ -353,7 +356,7 @@ sub Write
 #         if(open (FILE, ">$name"))
 # 	print "using $self->{'file-encoding'} as file-encoding for writing\n";
 	 my $mode = '>';
-	if(defined($self->{MODE}) && $self->{MODE} eq 'rewrite')
+	if(defined($self->{MODE}) && $self->{MODE} eq 'append')
 	{
 		$mode = '>>';
 	}
@@ -525,10 +528,48 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-file@rt.cpan.org>, or through the web interface at
+C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
+
 
 =head1 ACKNOWLEDGEMENTS
 

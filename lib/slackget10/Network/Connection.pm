@@ -2,10 +2,7 @@ package slackget10::Network::Connection;
 
 use warnings;
 use strict;
-
-require slackget10::Network::Connection::FTP ;
-require slackget10::Network::Connection::HTTP ;
-require slackget10::Network::Connection::FILE ;
+use slackget10::Status ;
 
 =head1 NAME
 
@@ -13,11 +10,12 @@ slackget10::Network::Connection - A wrapper for network operation in slack-get
 
 =head1 VERSION
 
-Version 0.9.6
+Version 1.0.0
 
 =cut
 
-our $VERSION = '0.9.7';
+our $VERSION = '1.0.0';
+our $ENABLE_DEPRECATED_COMPATIBILITY_MODE=0;
 
 # my %equiv = (
 # 	'normal' => 'IO::Socket::INET',
@@ -30,54 +28,82 @@ our @ISA = qw();
 
 =head1 SYNOPSIS
 
-This class is anoter wrapper for slack-get. It will encapsulate all nework operation. This class can chang a lot before the release and it may be rename in slackget10::NetworkConnection.
+This class is anoter wrapper for slack-get. It will encapsulate all network operation. This class can chang a lot before the release and it may be rename in slackget10::NetworkConnection.
 
 =head2 Some words about subclass
 
-This class is a wrapper for subclass like slackget10::Network::Connection::HTTP or slackget10::Network::Connection::FTP. You can add a class for a new protocol (and update this constructor) very simply but you must know that all class the slackget10::Network::Connection::* must have the following methods (the format is : <method name(<arguments>)> : <returned value>, parmameters between [] are optionnals):
+WARNING: The slackget10::Network::Connection::* "drivers" API changed with version 1.0.0
 
-	- test_server : a float (the server response time)
-	- fetch_file([$remote_filename],[$local_file]) : a boolean (1 or 0). NOTE: this method store the fetched file on the hard disk. If $local_file is not defined, fetch() must store the file in <update-directory>.
-	- fetch_all : a boolean (1 or 0)
-	- get_file([$remote_filename]) : the file content
-	
+This class use subclass like slackget10::Network::Connection::HTTP or slackget10::Network::Connection::FTP as "drivers" for a specific protocol. You can add a "driver" class for a new protocol easily by creating a module in the slackget10::Network::Connection:: namespace. You must know that all class the slackget10::Network::Connection::* must implements the following methods (the format is : <method name(<arguments>)> : <returned value>, parmameters between [] are optionnals):
+
+	- __test_server : a float (the server response time)
+	- __fetch_file([$remote_filename],[$local_file]) : a boolean (1 or 0). NOTE: this method store the fetched file on the hard disk. If $local_file is not defined, fetch() must store the file in <config:update-directory> or in "download_directory" (constructor parameter).
+	- __get_file([$remote_filename]) : the file content
+
+Moreover, this "driver" have to respect the namming convention : the protocol name it implements in upper case (for example, if you implements a driver for the rsync:// protocol the module must be called slackget10::Network::Connection::RSYNC.pm).
 
 =head1 CONSTRUCTOR
 
 =head2 new
 
+WARNING: Since version 1.0.0 of this module you can't instanciate a slackget10::Network::Connection object with a constructor with 1 argument. The followinf syntax is deprecated and no longer supported :
+
+	my $connection = slackget10::Network::Connection->new('http://www.nymphomatic.org/mirror/linuxpackages/Slackware-10.1/');
+
+You can force this class to behave like the old version by setting $slackget10::Network::Connection::ENABLE_DEPRECATED_COMPATIBILITY_MODE to 1 *BEFORE* calling the constructor.
+
+This constructor take the followings arguments :
+
+	host : a hostname (mandatory)
+	path : a path on the remote host
+	files : a arrayref wich contains a list of files to download
+	config : a reference to a slackget10::Config object (mandatory if "download_directory" is not defined)
+	download_directory : a directory where this object can store fetched files (mandatory if "config" is not defined)
+	InlineStates : a hashref which contains the reference to event handlers (mandatory)
+	
+
 	use slackget10::Network::Connection;
 	
 	(1)
-	my $connection = slackget10::Network::Connection->new('http://www.nymphomatic.org/mirror/linuxpackages/Slackware-10.1/');
-	my $file = $connection->get_file('FILELIST.TXT');
-	
-	or :
-	
-	(2)
-	my $connection = slackget10::Network::Connection->new('http://www.nymphomatic.org/mirror/linuxpackages/Slackware-10.1/FILELIST.TXT');
-	my $file = $connection->get_file;
-	
-	or :
-	
-	(3)
 	my $connection = slackget10::Network::Connection->new(
 			host => 'http://www.nymphomatic.org',
 			path => '/mirror/linuxpackages/Slackware-10.1/',
 			files => ['FILELIST.TXT','PACKAGES.TXT','CHECKSUMS.md5'], # Be carefull that it's the files parameter not file. file is the current working file.
 			config => $config,
-			mode => 'normal'
+			InlineStates => {
+				progress => \&handle_progress ,
+				download_error => \&handle_download_error ,
+				download_finished => \&handle_download_finished,
+			}
 	);
 	$connection->fetch_all or die "An error occur during the download\n";
 	
 	or (the recommended way) :
 	
-	(4)
+	(2)
 	my $connection = slackget10::Network::Connection->new(
 			host => 'http://www.nymphomatic.org',
 			path => '/mirror/linuxpackages/Slackware-10.1/',
 			config => $config,
-			mode => 'normal'
+			InlineStates => {
+				progress => \&handle_progress ,
+				download_error => \&handle_download_error ,
+				download_finished => \&handle_download_finished,
+			}
+	);
+	my $file = $connection->get_file('FILELIST.TXT') or die "[ERROR] unable to download FILELIST.TXT\n";
+	
+	Instead of using the "config" parameter you can use "download_directory" :
+	
+	my $connection = slackget10::Network::Connection->new(
+			host => 'http://www.nymphomatic.org',
+			path => '/mirror/linuxpackages/Slackware-10.1/',
+			download_directory => "/tmp/",
+			InlineStates => {
+				progress => \&handle_progress ,
+				download_error => \&handle_download_error ,
+				download_finished => \&handle_download_finished,
+			}
 	);
 	my $file = $connection->get_file('FILELIST.TXT') or die "[ERROR] unable to download FILELIST.TXT\n";
 	
@@ -86,16 +112,16 @@ This class is a wrapper for subclass like slackget10::Network::Connection::HTTP 
 	my $status = $connection->fetch('FILELIST.TXT',"$config->{common}->{'update-directory'}/".$server->shortname."/cache/FILELIST.TXT");
 	die "[ERROR] unable to download FILELIST.TXT\n" unless ($status);
 
-The global way (3) is not recommended because of the lake of control on the downloaded file. For example, if there is only 1 download which fail, fetch_all will return undef and you don't know which download have failed.
+The global way (1) is not recommended because of the lake of control on the downloaded file. For example, if there is only 1 download which fail, fetch_all will return undef and you don't know which download have failed.
 
-The simpliest ways (1) and (2) are not recommended because you didn't give a slackget10::Config object to the connection. So you have to manage by yourself all tasks needed to a proper work (like charset encoding, moving file to proper destination, etc.). In this case don't forget that the download methods file save file in the current directory.
 
 The recommended way is to give to the constructor the following arguments :
 
-	host : the host (with the protocol, do not provide 'ftp.lip6.fr' provide ftp://ftp.lip6.fr. The protocol will be automatically extract)
+	host : the host (with the protocol, do not provide 'ftp.lip6.fr' provide ftp://ftp.lip6.fr. The protocol will be automatically extracted and used to load the correct "driver")
 	path : the path to the working directory on the server (Ex: '/pub/linux/distributions/slackware/slackware-10.1/'). Don't provide a 'file' argument.
 	config : the slackget10::Config object of the application
-	mode : a mode between 'normal' or 'secure'. This is only when you attempt to connect to a daemon (front-end/daemon or daemon/daemon connection). 'secure' use SSL connection.
+	mode : a mode between 'normal' or 'secure'. This is only when you attempt to connect to a daemon (front-end/daemon or daemon/daemon connection). 'secure' use SSL connection (** not yet implemented **).
+	InlineStates : see above.
 
 =cut
 
@@ -106,10 +132,10 @@ sub new
 	bless($self,$class);
 # 	print "scalar: ",scalar(@args),"\n";
 	if(scalar(@args) < 1){
-		warn "[slackget10::Network::Connection] you must provide at least one argument to my constructor\n" ;
+		warn "[slackget10::Network::Connection] you must provide arguments to the constructor. Please have a look at the documentation :\n\tperldoc slackget10::Network::Connection\n" ;
 		return undef ;
 	}
-	elsif(scalar(@args) == 1){
+	elsif(scalar(@args) == 1 && $ENABLE_DEPRECATED_COMPATIBILITY_MODE){
 		if(is_url($self,$args[0])){
 			parse_url($self,$args[0]) or return undef; # here is a really paranoid test because if this test fail it fail before (at is_url), so the "or return undef" is "de trop"
 			_load_network_module($self) or return undef;
@@ -120,13 +146,27 @@ sub new
 	}
 	else{
 		my %args = @args;
-		warn "[slackget10::Network::Connection] You need to provide a \"config\" parameter with a valid slackget10::Config object reference.\n" && return undef if(!defined($args{config}) && ref($args{config}) ne 'slackget10::Config') ;
-		if(exists($args{host}) && exists($args{config}) && ref($args{config}) eq 'slackget10::Config' ) #(exists($args{path}) || exists($args{file}) ) && 
+		warn "[slackget10::Network::Connection] You need to provide a \"config\" parameter with a valid slackget10::Config object reference.\n" if(!defined($args{config}) && ref($args{config}) ne 'slackget10::Config') ;
+		if(exists($args{host}) && ((exists($args{config}) && ref($args{config}) eq 'slackget10::Config') || defined($args{download_directory})) ) #(exists($args{path}) || exists($args{file}) ) && 
 		{
+			$self->{DATA}->{download_directory}=$args{download_directory} if(defined($args{download_directory}));
 			parse_url($self,$args{host}) or return undef;
 			_load_network_module($self) or return undef;
 			_fill_data_section($self,\%args);
-			
+			if(defined($args{InlineStates}) && ref($args{InlineStates}) eq 'HASH'){
+				$self->{InlineStates} = $args{InlineStates};
+				foreach ('progress','download_error','download_finished'){
+					print "[slackget10::Network::Connection] [debug] testing InlineStates/$_\n";
+					unless(exists($self->{InlineStates}->{$_}) && defined($self->{InlineStates}->{$_})){
+						warn "[slackget10::Network::Connection] you must provide a sub reference as InlineStates->$_.\n";
+						return undef;
+					}
+				}
+			}
+			else{
+				warn "[slackget10::Network::Connection] you must provide some InlineStates.\n";
+				return undef;
+			}
 		}
 		else
 		{
@@ -135,13 +175,25 @@ sub new
 		}
 		%args = ();
 	}
+	$self->__init_subclass if($self->can('__init_subclass'));
 	@args = ();
 # 	$self->{STATUS} = {
 # 		0 => "All's good\n";
 # 	};
-	
 	return $self;
 }
+
+=head1 EVENTS
+
+Since the version 1.0.0 this class is event driven. To manage those events *YOU HAVE* to pass an InlineStates argument to the constructor (L<new>).
+
+There is 3 events generated by this class :
+
+	* progress : this event is throw when a progress is detected on file download. The handler will receive the followings parameters (in this order) : the downloaded filename, the amount of data downloaded, the total size of the remote file.
+	
+	* download_error : this is throw when an error occured during download. The handler will receive the following parameters (in this order) : the downloaded filename, a slackget10::Status object.
+	
+	*download_finished : this is throw when a download finished successfully. The handler will receive the following parameters (in this order) : the downloaded filename, a slackget10::Status object.
 
 =head1 FUNCTIONS
 
@@ -256,21 +308,26 @@ sub strip_slash
 
 sub _load_network_module {
 	my $self = shift;
-	if($self->{DATA}->{protocol} eq 'ftp'){
-# 		print "[debug] derivation de slackget10::Network::Connection::FTP\n";
-		@ISA = qw( slackget10::Network::Connection::FTP ) ;
-	}
-	elsif($self->{DATA}->{protocol} eq 'http'){
-# 		print "[debug] derivation de slackget10::Network::Connection::HTTP\n";
-		@ISA = qw( slackget10::Network::Connection::HTTP ) ;
-	}
-	elsif($self->{DATA}->{protocol} eq 'file'){
-# 		print "[debug] derivation de slackget10::Network::Connection::HTTP\n";
-		@ISA = qw( slackget10::Network::Connection::FILE ) ;
+	my $driver='slackget10::Network::Connection::'.uc($self->{DATA}->{protocol});
+	print "[slackget10::Network::Connection] [debug] preparing to load $driver driver.\n";
+	eval "require $driver;";
+	if($@){
+		warn "[slackget10::Network::Connection] driver for the network protocol '$self->{DATA}->{protocol}' is not available.\n" ;
+		return undef ;
 	}
 	else{
-		warn "[slackget10::Network::Connection] Network protocol '$self->{protocol}' is not available\n" ;
-		return undef ;
+		push @ISA, $driver ;
+		print "[slackget10::Network::Connection] [debug] checking if driver $self->{DATA}->{protocol} support all required methods.\n";
+		return undef unless($self->_check_driver_support_methods);
+	}
+	return 1;
+}
+
+sub _check_driver_support_methods {
+	my $self = shift ;
+	foreach ('__fetch_file','__get_file','__test_server'){
+		return undef unless($self->can($_)) ;
+		print "[slackget10::Network::Connection] [debug] driver $self->{DATA}->{protocol} support $_() method.\n";
 	}
 	return 1;
 }
@@ -296,6 +353,117 @@ sub DEBUG_show_data_section
 		print "$_ : $self->{DATA}->{$_}";
 	}
 	print "===> END DATA section <===\n";
+}
+
+=head2 test_server
+
+This method test the response time of the mirror, by making a new connection to the server and downloading the FILELIST.TXT file. Be aware of the fact that after testing the connection you will have a new connection (if you were previously connected the previous connection is closed).
+
+	my $time = $connection->test_server() ;
+
+This method call the <DRIVER>->__test_server() method.
+
+=cut
+
+sub test_server {
+	my $self = shift;
+	$self->__test_server ;
+}
+
+=head2 get_file
+
+Download and return a given file.
+
+	my $file = $connection->get_file('PACKAGES.TXT') ;
+
+This method also generate events based on the returned value. If nothing is returned it throw the "download_error" event, else it throw the "download_finished" event.
+
+At this for the moment this method throw a "progress" event with a progress value set at -1.
+
+This method call the <DRIVER>->__get_file() method.
+
+=cut
+
+sub get_file {
+	my ($self,$file) = @_;
+	$self->post_event('progress',$file,-1,-9999);
+	my $state =  slackget10::Status->new(codes => {
+		0 => "All goes well.\n",
+		1 => "An error occured, we recommend to change this server's host.\n"
+	});
+	my $content = $self->__get_file($file);
+	if(defined($content)){
+		$state->current(0);
+		$self->post_event('download_finished',$file,$state);
+		return \$content;
+	}else{
+		$state->(1);
+		$self->post_event('download_error',$file,$state);
+		undef($content);
+		return undef;
+	}
+}
+
+=head2 fetch_file
+
+Download and store a given file.
+
+	$connection->fetch_file() ; # download the file $connection->file and store it at $config->{common}->{'update-directory'}/$connection->file, this way is not recommended
+	or
+	$connection->fetch_file($remote_file) ; # download the file $remote_file and store it at $config->{common}->{'update-directory'}/$connection->file, this way is not recommended
+	or
+	$connection->fetch_file('PACKAGES.TXT',"$config->{common}->{'update-directory'}/".$current_specialfilecontainer_object->id."/PACKAGES.TXT") ; # This is the recommended way.
+	# This is equivalent to : $connection->fetch_file($remote_file,$local_file) ;
+
+This method return a slackget10::Status object with the following object declaration :
+
+	my $status =  slackget10::Status->new(codes => {
+		0 => "All goes well.\n",
+		1 => "An error occured "
+	});
+
+A more explicit error string can be concatenate to state 1. This method also generate events based on the returned value. If nothing is returned it throw the "download_error" event, else it throw the "download_finished" event.
+
+At this for the moment this method throw a "progress" event with a progress value set at -1.
+
+This method call the <DRIVER>->__fetch_file() method.
+
+=cut
+
+sub fetch_file {
+	my ($self,$file,@args) = @_;
+	$self->post_event('progress',$file,-1);
+	my $status = $self->__fetch_file($file,@args);
+	$self->post_event('download_finished',$file,$status);
+	return $status;
+}
+
+=head2 fetch_all
+
+This method fetch all files declare in the "files" parameter of the constructor.
+
+	$connection->fetch_all or die "Unable to fetch all files\n";
+
+This method save all files in the $config->{common}->{'update-directory'} (or in the "download_directory") directory (so you have to manage yourself the files deletion/replacement problems).
+
+=cut
+
+sub fetch_all {
+	my $self = shift ;
+	foreach (@{$self->files}){
+		$self->fetch_file($_) or return undef;
+	}
+	return 1 ;
+}
+
+=head2 post_event
+
+
+=cut
+
+sub post_event {
+	my ($self,$event,@args)=@_;
+	$self->{InlineStates}->{$event}->(@args);
 }
 
 =head1 ACCESSORS
@@ -377,10 +545,48 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-networking@rt.cpan.org>, or through the web interface at
+C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
+
 
 =head1 ACKNOWLEDGEMENTS
 

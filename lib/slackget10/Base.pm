@@ -22,8 +22,14 @@ Version 1.0.2
 
 =cut
 
-our $VERSION = '1.0.2';
-$XML::Simple::PREFERRED_PARSER='XML::Parser' ;
+our $VERSION = '1.0.3';
+eval 'use XML::Parser';
+if($@) {
+	warn("XML::Parser is not installed. XML processing operations will be very slow.\n");
+} else {
+	$XML::Simple::PREFERRED_PARSER='XML::Parser' ;
+}
+
 
 =head1 SYNOPSIS
 
@@ -450,10 +456,47 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-base@rt.cpan.org>, or through the web interface at
+C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
 
 =head1 ACKNOWLEDGEMENTS
 
