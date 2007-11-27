@@ -269,6 +269,8 @@ L<http://search.cpan.org/dist/slackget10>
 
 =head1 ACKNOWLEDGEMENTS
 
+Thanks to Bertrand Dupuis (yes my brother) for his contribution to the documentation.
+
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2005 DUPUIS Arnaud, All Rights Reserved.

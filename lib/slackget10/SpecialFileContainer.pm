@@ -20,6 +20,7 @@ Version 0.9.6
 =cut
 
 our $VERSION = '0.9.6';
+our $DEBUG=0;
 
 =head1 SYNOPSIS
 
@@ -54,6 +55,7 @@ take the following arguments :
 sub new
 {
 	my ($class,$root,%args) = @_ ;
+	print "[slackget10::SpecialFileContainer] [debug] about to create a new instance\n" if($DEBUG);
 	return undef unless(defined($root));
 	my $self={};
 	$self->{ROOT} = $root;
@@ -63,8 +65,11 @@ sub new
 	}
 	$self->{DATA}->{config} = $args{config} if(defined($args{config}) && ref($args{config}) eq 'slackget10::Config');
 	$self->{DATA}->{FILELIST} = slackget10::SpecialFiles::FILELIST->new($args{FILELIST},$self->{DATA}->{config},$root) or return undef;
+	print "[slackget10::SpecialFileContainer] [debug] FILELIST instance : $self->{DATA}->{FILELIST}\n" if($DEBUG);
 	$self->{DATA}->{PACKAGES} = slackget10::SpecialFiles::PACKAGES->new($args{PACKAGES},$self->{DATA}->{config},$root) or return undef;
+	print "[slackget10::SpecialFileContainer] [debug] PACKAGES instance : $self->{DATA}->{PACKAGES}\n" if($DEBUG);
 	$self->{DATA}->{CHECKSUMS} = slackget10::SpecialFiles::CHECKSUMS->new($args{CHECKSUMS},$self->{DATA}->{config},$root) or return undef;
+	print "[slackget10::SpecialFileContainer] [debug] CHECKSUMS instance : $self->{DATA}->{CHECKSUMS}\n" if($DEBUG);
 	bless($self);#,$class
 	return $self;
 }
@@ -81,17 +86,17 @@ Mainly call the compile() method of the special files.
 
 sub compile {
 	my $self = shift;
-	printf("compiling FILELIST...");
+# 	printf("compiling FILELIST...");
 	$|++;
 	$self->{DATA}->{FILELIST}->compile ;
-	print "ok\n";
-	printf("compiling PACKAGES...");
+# 	print "ok\n";
+# 	printf("compiling PACKAGES...");
 	$self->{DATA}->{PACKAGES}->compile ; 
-	print "ok\n";
-	printf("compiling CHECKSUMS...");
+# 	print "ok\n";
+# 	printf("compiling CHECKSUMS...");
 	$self->{DATA}->{CHECKSUMS}->compile ;
-	print "ok\n";
-	printf("merging data...");
+# 	print "ok\n";
+# 	printf("merging data...");
 	$self->{DATA}->{PACKAGELIST} = undef;
 	my $packagelist = slackget10::PackageList->new('no-root-tag' => 1) or return undef;
 	my $r_list = $self->{DATA}->{FILELIST}->get_file_list ;
@@ -121,7 +126,7 @@ sub compile {
 # 	my $file = new slackget10::File ();
 # 	$file->Write("debug/specialfilecontainer_$self->{ROOT}.xml",$self->to_XML) ;
 # 	$file->Close;
-	print "ok\n";
+# 	print "ok\n";
 }
 
 =head2 id
@@ -161,12 +166,51 @@ DUPUIS Arnaud, C<< <a.dupuis@infinityperl.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-slackget10-networking@rt.cpan.org>, or through the web interface at
+C<bug-slackget10@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=slackget10>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
 
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc slackget10
+
+
+You can also look for information at:
+
+=over 4
+
+=item * Infinity Perl website
+
+L<http://www.infinityperl.org>
+
+=item * slack-get specific website
+
+L<http://slackget.infinityperl.org>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=slackget10>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/slackget10>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/slackget10>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/slackget10>
+
+=back
+
 =head1 ACKNOWLEDGEMENTS
+
+Thanks to Bertrand Dupuis (yes my brother) for his contribution to the documentation.
 
 =head1 COPYRIGHT & LICENSE
 

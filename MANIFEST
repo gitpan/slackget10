@@ -14,11 +14,12 @@ lib/slackget10/Media.pm
 lib/slackget10/MediaList.pm
 lib/slackget10/Network.pm
 lib/slackget10/Network/Auth.pm
+lib/slackget10/Network/Backend/XML.pm
 lib/slackget10/Network/Connection.pm
 lib/slackget10/Network/Connection/FILE.pm
 lib/slackget10/Network/Connection/FTP.pm
 lib/slackget10/Network/Connection/HTTP.pm
-lib/slackget10/Network/Response.pm
+lib/slackget10/Network/Message.pm
 lib/slackget10/Operation.pm
 lib/slackget10/Package.pm
 lib/slackget10/PackageList.pm

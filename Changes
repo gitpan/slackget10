@@ -61,3 +61,10 @@ Revision history for slackget10
 		* slackget10::Log
 		* slackget10::Log::LogRotate
 	- Change loads of things in slackget10::Network::Connection (please look at the documentation)
+
+0.12 Tue Nov 27 23:00:51 CEST 2007
+	- Update documentation
+	- Add slackget10::Network::Message class
+	- Add slackget10::Network::Backend::* namespace and the XML.pm backend
+	- remove slackget10::Network::Response.pm
+

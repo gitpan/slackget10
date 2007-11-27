@@ -146,7 +146,6 @@ sub compil_packages_directory
 # 	print STDERR "[DEBUG] [compil_packages_directory] compiling directory \"$dir\"\n";
 	my @files = $self->dir2files($dir);
 	$|=1;
-	die "FATAL: The directory \"$dir\" is empty or contains no packages.\n" if(scalar(@files) < 1);
 # 	print STDERR "[DEBUG] number of entry in files array : ",scalar(@files),"\n";
 # 	print STDERR "[DEBUG] entry in \@files :\n",join "\n",@files,"\n";
 	my $ref;
@@ -168,6 +167,10 @@ sub compil_packages_directory
 	}
 # 	print join(' :: ', $packagelist->get_indexes());
 	$packagelist = new slackget10::PackageList('encoding'=>$self->{CONF}->{common}->{'file-encoding'}) unless($packagelist);
+	if(scalar(@files) < 1){
+		warn "The directory \"$dir\" is empty or contains no packages.\n" ;
+		return $packagelist;
+	}
 # 	print STDERR "slackget10::PackageList reference : $packagelist\n";
 	my $pg_idx=0;
 	my $mark = int(scalar(@files)/20);

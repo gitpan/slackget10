@@ -14,15 +14,15 @@ slackget10 - The main slack-get 1.0 library
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =cut
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 =head1 SYNOPSIS
 
-slack-get (http://slackget.infinityperl.org) is an apt-get like tool for Slackware Linux. This bundle is the core library of this program.
+slack-get (http://slackget.infinityperl.org and now http://www.infinityperl.org/category/slack-get) is an apt-get like tool for Slackware Linux. This bundle is the core library of this program.
 
 The name slackget10 means slack-get 1.0 because this module is complely new and is for the 1.0 release. It is entierely object oriented, and require some other modules (like XML::Simple, Net::Ftp and LWP::Simple).
 
@@ -399,7 +399,7 @@ You can also look for information at:
 
 =item * Infinity Perl website
 
-L<http://www.infinityperl.org>
+L<http://www.infinityperl.org/category/slack-get>
 
 =item * slack-get specific website
 
@@ -424,6 +424,8 @@ L<http://search.cpan.org/dist/slackget10>
 =back
 
 =head1 ACKNOWLEDGEMENTS
+
+Thanks to Bertrand Dupuis (yes my brother) for his contribution to the documentation.
 
 =head1 COPYRIGHT & LICENSE
 

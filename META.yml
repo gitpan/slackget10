@@ -1,6 +1,6 @@
 ---
 name: slackget10
-version: 0.11
+version: 0.12
 author:
   - 'Arnaud Dupuis <dupuisarn@cpan.org>'
 abstract: The main slack-get 1.0 library
@@ -24,7 +24,7 @@ build_requires:
 provides:
   slackget10:
     file: lib/slackget10.pm
-    version: 0.11
+    version: 0.12
   slackget10::Base:
     file: lib/slackget10/Base.pm
     version: 1.0.3
@@ -60,10 +60,13 @@ provides:
     version: 0.9.11
   slackget10::Network:
     file: lib/slackget10/Network.pm
-    version: 0.7.3
+    version: 0.8.0
   slackget10::Network::Auth:
     file: lib/slackget10/Network/Auth.pm
     version: 0.8.7
+  slackget10::Network::Backend::XML:
+    file: lib/slackget10/Network/Backend/XML.pm
+    version: 0.8.0
   slackget10::Network::Connection:
     file: lib/slackget10/Network/Connection.pm
     version: 1.0.0
@@ -76,9 +79,9 @@ provides:
   slackget10::Network::Connection::HTTP:
     file: lib/slackget10/Network/Connection/HTTP.pm
     version: 1.0.0
-  slackget10::Network::Response:
-    file: lib/slackget10/Network/Response.pm
-    version: 0.9.2
+  slackget10::Network::Message:
+    file: lib/slackget10/Network/Message.pm
+    version: 0.9.1
   slackget10::Operation:
     file: lib/slackget10/Operation.pm
     version: 0.5

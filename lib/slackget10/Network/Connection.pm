@@ -16,6 +16,7 @@ Version 1.0.0
 
 our $VERSION = '1.0.0';
 our $ENABLE_DEPRECATED_COMPATIBILITY_MODE=0;
+our $DEBUG=0;
 
 # my %equiv = (
 # 	'normal' => 'IO::Socket::INET',
@@ -146,7 +147,7 @@ sub new
 	}
 	else{
 		my %args = @args;
-		warn "[slackget10::Network::Connection] You need to provide a \"config\" parameter with a valid slackget10::Config object reference.\n" if(!defined($args{config}) && ref($args{config}) ne 'slackget10::Config') ;
+# 		warn "[slackget10::Network::Connection] You need to provide a \"config\" parameter with a valid slackget10::Config object reference.\n" if(!defined($args{config}) && ref($args{config}) ne 'slackget10::Config') ;
 		if(exists($args{host}) && ((exists($args{config}) && ref($args{config}) eq 'slackget10::Config') || defined($args{download_directory})) ) #(exists($args{path}) || exists($args{file}) ) && 
 		{
 			$self->{DATA}->{download_directory}=$args{download_directory} if(defined($args{download_directory}));
@@ -156,7 +157,7 @@ sub new
 			if(defined($args{InlineStates}) && ref($args{InlineStates}) eq 'HASH'){
 				$self->{InlineStates} = $args{InlineStates};
 				foreach ('progress','download_error','download_finished'){
-					print "[slackget10::Network::Connection] [debug] testing InlineStates/$_\n";
+					print "[slackget10::Network::Connection] [debug] testing InlineStates/$_\n" if($DEBUG);
 					unless(exists($self->{InlineStates}->{$_}) && defined($self->{InlineStates}->{$_})){
 						warn "[slackget10::Network::Connection] you must provide a sub reference as InlineStates->$_.\n";
 						return undef;
@@ -175,6 +176,7 @@ sub new
 		}
 		%args = ();
 	}
+	$self->{OVAR} = {};
 	$self->__init_subclass if($self->can('__init_subclass'));
 	@args = ();
 # 	$self->{STATUS} = {
@@ -309,7 +311,7 @@ sub strip_slash
 sub _load_network_module {
 	my $self = shift;
 	my $driver='slackget10::Network::Connection::'.uc($self->{DATA}->{protocol});
-	print "[slackget10::Network::Connection] [debug] preparing to load $driver driver.\n";
+	print "[slackget10::Network::Connection] [debug] preparing to load $driver driver.\n" if($DEBUG);
 	eval "require $driver;";
 	if($@){
 		warn "[slackget10::Network::Connection] driver for the network protocol '$self->{DATA}->{protocol}' is not available.\n" ;
@@ -317,7 +319,7 @@ sub _load_network_module {
 	}
 	else{
 		push @ISA, $driver ;
-		print "[slackget10::Network::Connection] [debug] checking if driver $self->{DATA}->{protocol} support all required methods.\n";
+		print "[slackget10::Network::Connection] [debug] checking if driver $self->{DATA}->{protocol} support all required methods.\n" if($DEBUG);
 		return undef unless($self->_check_driver_support_methods);
 	}
 	return 1;
@@ -327,7 +329,7 @@ sub _check_driver_support_methods {
 	my $self = shift ;
 	foreach ('__fetch_file','__get_file','__test_server'){
 		return undef unless($self->can($_)) ;
-		print "[slackget10::Network::Connection] [debug] driver $self->{DATA}->{protocol} support $_() method.\n";
+		print "[slackget10::Network::Connection] [debug] driver $self->{DATA}->{protocol} support $_() method.\n" if($DEBUG);
 	}
 	return 1;
 }
@@ -434,7 +436,11 @@ sub fetch_file {
 	my ($self,$file,@args) = @_;
 	$self->post_event('progress',$file,-1);
 	my $status = $self->__fetch_file($file,@args);
-	$self->post_event('download_finished',$file,$status);
+	if($status->current > 0){
+		$self->post_event('download_error',$file,$status);
+	}else{
+		$self->post_event('download_finished',$file,$status);
+	}
 	return $status;
 }
 
@@ -463,7 +469,7 @@ sub fetch_all {
 
 sub post_event {
 	my ($self,$event,@args)=@_;
-	$self->{InlineStates}->{$event}->(@args);
+	$self->{InlineStates}->{$event}->(@args,$self);
 }
 
 =head1 ACCESSORS
@@ -528,7 +534,7 @@ sub files {
 
 =head2 path
 
-return the path of the current Connection object as a string :
+return or set the path of the current Connection object as a string :
 
 	my $path = $connection->path ;
 
@@ -536,6 +542,53 @@ return the path of the current Connection object as a string :
 
 sub path {
 	return $_[1] ? $_[0]->{DATA}->{path}=$_[1] : $_[0]->{DATA}->{path};
+}
+
+=head2 download_directory
+
+set or return the download_directory for the current Connection object as string :
+
+	my $dl_dir = $connection->download_directory ;
+
+=cut
+
+sub download_directory {
+	my ($self,$dir) = @_;
+	if(defined($dir) && -e $dir){
+		$self->{DATA}->{config}->{common}->{'update-directory'} = undef;
+		$self->{DATA}->{download_directory} = undef;
+		$self->{DATA}->{download_directory} = $dir;
+		return $self->{DATA}->{download_directory};
+	}
+	if(defined($self->{DATA}->{download_directory}) && -e $self->{DATA}->{download_directory}){
+		return $self->{DATA}->{download_directory} ;
+	}
+	elsif(defined($self->{DATA}->{config})){
+		return $self->{DATA}->{config}->{common}->{'update-directory'} ;
+	}
+	return undef;
+}
+
+=head2 object_extra_data
+
+This accessor allow you to store and retrieve random data in the connection object.
+
+For example, the slack-get daemon (sg_daemon) use the media id to keep tracks of all connection objects and 
+for the reverse resolution, it need to identify the media id from the Connection object. It's done by  the following code :
+
+	$connection->object_extra_data('shortname', $media->shortname());
+
+Extra data are not stored in the same space than object data.
+
+=cut
+
+sub object_extra_data {
+	my ($self,$var,$val) = @_;
+	if(defined($val)){
+		$self->{OVAR}->{$var} = $val;
+	}else{
+		return $self->{OVAR}->{$var};
+	}
 }
 
 =head1 AUTHOR
@@ -589,6 +642,8 @@ L<http://search.cpan.org/dist/slackget10>
 
 
 =head1 ACKNOWLEDGEMENTS
+
+Thanks to Bertrand Dupuis (yes my brother) for his contribution to the documentation.
 
 =head1 COPYRIGHT & LICENSE
 
