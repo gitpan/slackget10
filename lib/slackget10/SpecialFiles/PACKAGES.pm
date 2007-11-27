@@ -17,7 +17,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '0.9.8';
+our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 
@@ -258,6 +258,9 @@ L<http://search.cpan.org/dist/slackget10>
 =back
 
 =head1 ACKNOWLEDGEMENTS
+
+Thanks to Bertrand Dupuis (yes my brother) for his contribution to the documentation.
+
 
 =head1 COPYRIGHT & LICENSE
 

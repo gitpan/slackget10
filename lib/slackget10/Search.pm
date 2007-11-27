@@ -9,11 +9,11 @@ slackget10::Search - The slack-get search class
 
 =head1 VERSION
 
-Version 0.8.2
+Version 1.0.0
 
 =cut
 
-our $VERSION = '0.8.5';
+our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 

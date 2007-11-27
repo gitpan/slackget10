@@ -15,7 +15,7 @@ Version 1.0.0
 
 =cut
 
-our $VERSION = '0.9.0';
+our $VERSION = '1.0.0';
 our @ISA = qw( slackget10::List );
 
 =head1 SYNOPSIS

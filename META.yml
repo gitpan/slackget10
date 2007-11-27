@@ -33,7 +33,7 @@ provides:
     version: 1.0.0
   slackget10::Date:
     file: lib/slackget10/Date.pm
-    version: 0.9.5
+    version: 1.0.0
   slackget10::File:
     file: lib/slackget10/File.pm
     version: 1.0.3
@@ -45,10 +45,10 @@ provides:
     version: 0.1
   slackget10::List:
     file: lib/slackget10/List.pm
-    version: 0.9.0
+    version: 1.0.0
   slackget10::Local:
     file: lib/slackget10/Local.pm
-    version: 0.7.1
+    version: 1.0.0
   slackget10::MD5:
     file: lib/slackget10/MD5.pm
     version: 0.1
@@ -60,10 +60,10 @@ provides:
     version: 0.9.11
   slackget10::Network:
     file: lib/slackget10/Network.pm
-    version: 0.8.0
+    version: 1.0.0
   slackget10::Network::Auth:
     file: lib/slackget10/Network/Auth.pm
-    version: 0.8.7
+    version: 1.0.0
   slackget10::Network::Backend::XML:
     file: lib/slackget10/Network/Backend/XML.pm
     version: 0.8.0
@@ -75,7 +75,7 @@ provides:
     version: 0.6.0
   slackget10::Network::Connection::FTP:
     file: lib/slackget10/Network/Connection/FTP.pm
-    version: 0.9.3
+    version: 1.0.0
   slackget10::Network::Connection::HTTP:
     file: lib/slackget10/Network/Connection/HTTP.pm
     version: 1.0.0
@@ -93,29 +93,29 @@ provides:
     version: 1.0.0
   slackget10::PkgTools:
     file: lib/slackget10/PkgTools.pm
-    version: 0.4.6
+    version: 1.0.0
   slackget10::Search:
     file: lib/slackget10/Search.pm
-    version: 0.8.5
+    version: 1.0.0
   slackget10::SpecialFileContainer:
     file: lib/slackget10/SpecialFileContainer.pm
-    version: 0.9.6
+    version: 1.0.0
   slackget10::SpecialFileContainerList:
     file: lib/slackget10/SpecialFileContainerList.pm
-    version: 0.9.0
+    version: 1.0.0
   slackget10::SpecialFiles::CHECKSUMS:
     file: lib/slackget10/SpecialFiles/CHECKSUMS.pm
-    version: 0.9.8
+    version: 1.0.0
   slackget10::SpecialFiles::FILELIST:
     file: lib/slackget10/SpecialFiles/FILELIST.pm
-    version: 0.9.8
+    version: 1.0.0
   slackget10::SpecialFiles::PACKAGES:
     file: lib/slackget10/SpecialFiles/PACKAGES.pm
-    version: 0.9.8
+    version: 1.0.0
   slackget10::Status:
     file: lib/slackget10/Status.pm
-    version: 0.9.9
-generated_by: Module::Build version 0.2806
+    version: 1.0.0
+generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2

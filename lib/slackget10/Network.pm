@@ -18,7 +18,7 @@ Version 0.8.0
 
 =cut
 
-our $VERSION = '0.8.0';
+our $VERSION = '1.0.0';
 our @ISA;
 
 =head1 SYNOPSIS

@@ -15,11 +15,11 @@ slackget10::SpecialFileContainer - A class to class, sort and compil the PACKAGE
 
 =head1 VERSION
 
-Version 0.9.6
+Version 1.0.0
 
 =cut
 
-our $VERSION = '0.9.6';
+our $VERSION = '1.0.0';
 our $DEBUG=0;
 
 =head1 SYNOPSIS

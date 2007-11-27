@@ -12,11 +12,11 @@ slackget10::PkgTools - A wrapper for the pkgtools action(installpkg, upgradepkg 
 
 =head1 VERSION
 
-Version 0.4.6
+Version 1.0.0
 
 =cut
 
-our $VERSION = '0.4.6';
+our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 

@@ -9,11 +9,11 @@ slackget10::Status - A class for returning a status code with its explanations
 
 =head1 VERSION
 
-Version 0.9.9
+Version 1.0.0
 
 =cut
 
-our $VERSION = '0.9.9';
+our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 

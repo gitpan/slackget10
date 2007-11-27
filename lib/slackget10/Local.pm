@@ -13,11 +13,11 @@ slackget10::Local - A class to load the locales
 
 =head1 VERSION
 
-Version 0.7.1
+Version 1.0.0
 
 =cut
 
-our $VERSION = '0.7.1';
+our $VERSION = '1.0.0';
 
 =head1 SYNOPSIS
 
