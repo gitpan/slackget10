@@ -93,11 +93,23 @@ All methods return a slackget10::Network::Message (L<slackget10::Network::Messag
 
 =cut
 
+=head2 decode
+
+To do.
+
+=cut
+
 sub decode {
 	my $self = shift;
 	my $input = join '', @_;
 	return $self->backend_decode($input);
 }
+
+=head2 encode
+
+To do.
+
+=cut
 
 sub encode {
 	my $self = shift;
@@ -106,6 +118,12 @@ sub encode {
 	use Data::Dumper; print Dumper($message),"\n";
 	return $self->backend_encode($message);
 }
+
+=head2 interpret
+
+To do.
+
+=cut
 
 sub interpret {
 	my $self = shift;
@@ -118,15 +136,33 @@ sub interpret {
 	}
 }
 
+=head2 cache_data
+
+To do.
+
+=cut
+
 sub cache_data {
 	my ($self,@data)=@_;
 	$self->{_PRIV}->{CACHE} .= join('',@data);
 }
 
+=head2 cached_data
+
+To do.
+
+=cut
+
 sub cached_data {
 	my $self = shift;
 	return $self->{_PRIV}->{CACHE};
 }
+
+=head2 clear_cache
+
+To do.
+
+=cut
 
 sub clear_cache {
 	my $self = shift;

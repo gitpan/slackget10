@@ -18,7 +18,7 @@ pod_coverage_ok( "slackget10::Network::Auth" );
 pod_coverage_ok( "slackget10::Network::Connection" );
 pod_coverage_ok( "slackget10::Network::Connection::FTP" );
 pod_coverage_ok( "slackget10::Network::Connection::HTTP" );
-pod_coverage_ok( "slackget10::Network::Response" );
+pod_coverage_ok( "slackget10::Network::Message" );
 pod_coverage_ok( "slackget10::Package" );
 pod_coverage_ok( "slackget10::PackageList" );
 pod_coverage_ok( "slackget10::PkgTools" );

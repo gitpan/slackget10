@@ -15,7 +15,7 @@ use_ok( 'slackget10::Network::Auth' );
 use_ok( 'slackget10::Network::Connection' );
 use_ok( 'slackget10::Network::Connection::FTP' );
 use_ok( 'slackget10::Network::Connection::HTTP' );
-use_ok( 'slackget10::Network::Response' );
+use_ok( 'slackget10::Network::Message' );
 use_ok( 'slackget10::Package' );
 use_ok( 'slackget10::PackageList' );
 use_ok( 'slackget10::PkgTools' );

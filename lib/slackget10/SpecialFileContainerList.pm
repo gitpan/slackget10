@@ -56,7 +56,7 @@ sub new
 	return $self;
 }
 
-=head2
+=head2 get_all_media_id
 
 return a list of all id of the SpecialFileContainers.
 

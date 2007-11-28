@@ -50,9 +50,13 @@ All methods return a slackget10::Network::Message (L<slackget10::Network::Messag
 sub backend_decode {
 	my $self = shift;
 	my $xml = join '', @_;
-	my $data = XML::Simple::XMLin($xml);
+	my $data = XML::Simple::XMLin( $xml );
 	delete($data->{version});
-	return slackget10::Network::Message->new(action => $data->{Enveloppe}->{Action}->{content}, raw_data => $data);
+	return slackget10::Network::Message->new(
+		action => $data->{Enveloppe}->{Action}->{content},
+		action_id => $data->{Enveloppe}->{Action}->{content},
+		raw_data => $data
+	);
 }
 
 =head2 backend_encode
